@@ -132,6 +132,11 @@ Chat Models
 
 LLMs supported by Langchain: https://python.langchain.com/v0.1/docs/integrations/llms/
 
+Track operations
+From now on, we can track the operations and the cost of this project from LangSmith:
+
+https://smith.langchain.com/
+
 ```python
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -263,6 +268,70 @@ response.schema()
     'total_tokens': {'title': 'Total Tokens', 'type': 'integer'}},
    'required': ['input_tokens', 'output_tokens', 'total_tokens']}}}
 
+Donde veas esto: 
+```
+llm = ChatOpenAI(model="gpt-3.5-turbo")
+```
+
+Escribe esto en su lugar: 
+```
+llm = ChatOpenAI(model="gpt-4o-mini")
+```
+
+Sustituir mixtral-8x7b-32768 con versiones posteriores como  mistral-saba-24b
+
+### Connect with alternative LLMs
+
+Intro to Groq
+
+- Groq is an AI Startup company. It is not the same as Grok, the LLM from Elon Musk.
+- It has developed a new chip call LPU (Language Processing Unit) which is specificly design to run LLMs faster and cheaper.
+- It offers a Groq Cloud where you can try Open Source LLMs like Llama3 or Mixtral.
+- It allows you to use Llama3 or Mixtral in your apps for free using a Groq API Key with some Rate Limits.
+
+Groq Rate limits: https://console.groq.com/settings/limits
+
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+
+from langchain_groq import ChatGroq
+
+llamaChatModel = ChatGroq(
+    model="llama3-70b-8192"
+)
+
+mistralChatModel = ChatGroq(
+    model="mixtral-8x7b-32768"
+)
+
+messages = [
+    ("system", "You are an historian expert in the Kennedy family."),
+    ("human", "How many members of the family died tragically?"),
+]
+
+print("\n----------\n")
+
+print("How many members of the family died tragically? - LLama3 Response:")
+
+print("\n----------\n")
+
+llamaResponse = llamaChatModel.invoke(messages)
+
+print(llamaResponse.content)
+
+print("\n----------\n")
+
+print("How many members of the family died tragically? - Mistral Response:")
+
+print("\n----------\n")
+
+mistralResponse = mistralChatModel.invoke(messages)
+
+print(mistralResponse.content)
+```
 
 
 
