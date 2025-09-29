@@ -333,5 +333,189 @@ mistralResponse = mistralChatModel.invoke(messages)
 print(mistralResponse.content)
 ```
 
+### DeepSeek
+
+Documentación de LangChain para ChatDeepSeek:
+https://python.langchain.com/api_reference/deepseek/chat_models/langchain_deepseek.chat_models.ChatDeepSeek.html
+
+### Grok 4
+
+### Kimi K2
+
+### Modelo Open Source de OpenAI (GPT-OSS)
+
+¿Qué es GPT‑OSS?
+GPT‑OSS es la familia de modelos de lenguaje open source de OpenAI. Son modelos potentes, gratuitos y disponibles para todos bajo licencia Apache 2.0. Actualmente hay dos versiones disponibles:
+
+gpt-oss-20b: 3.600 millones de parámetros activos, hasta 128.000 tokens de contexto
+
+gpt-oss-120b: 5.100 millones de parámetros activos, hasta 128.000 tokens de contexto
+
+Estos modelos ofrecen prácticamente las mismas capacidades que los modelos comerciales (como ChatGPT), sin coste de uso.
+
+```python
+from langchain.chat_models import ChatOpenAI
+ 
+llm = ChatOpenAI(
+    base_url="https://api.groq.com/openai/v1",
+    api_key="TU_API_KEY_DE_GROQ",  # Sustituye por tu clave
+    model="gpt-oss-llama3-70b"     # O "mixtral-8x7b", según disponibilidad
+)
+ 
+response = llm.invoke("Explica qué es el modelo GPT‑OSS en términos sencillos.")
+print(response.content)
+```
+
+GPT-4o ("Omni")
+- Tipo: Multimodal (texto, audio, imagen)
+- Ventana de contexto: 128.000 tokens
+- Fortalezas: Respuesta rápida (320 ms), 50 % más barato que GPT-4 Turbo, interacción multimodal en tiempo real, capacidades multilingües avanzadas.
+- Integración con LangChain y LangGraph: Sí (soporte completo).
+- Acceso: Disponible para usuarios Free, Plus y Pro de ChatGPT y vía API.
+
+Serie GPT-4.1 (GPT-4.1, 4.1 Mini, 4.1 Nano)
+- Tipo: Texto y multimodal básico
+- Ventana de contexto: Hasta 1 millón de tokens
+- Fortalezas: Excelente en programación, seguimiento de instrucciones, manejo de documentos largos, menor latencia y costes reducidos.
+- Integración con LangChain y LangGraph: Sí (parcial para Mini/Nano mediante adaptadores API).
+- Acceso: Solo vía API.
+
+GPT-4.5 (Nombre en clave: Orion)
+- Tipo: Multimodal mejorado
+- Ventana de contexto: No divulgada explícitamente
+- Fortalezas: Flujo conversacional más natural, inteligencia emocional, menos alucinaciones.
+- Integración con LangChain y LangGraph: Sí (acceso limitado en beta).
+- Acceso: Suscripciones pagadas a ChatGPT.
+
+Serie o (o1, o3, o4-mini)
+- Tipo: Modelos especializados en razonamiento
+- Ventana de contexto: Avanzada, pero no pública
+- Fortalezas:
+  - o1: Razonamiento científico y matemático.
+  - o3: Resolución avanzada de problemas con integración de herramientas.
+  - o4-mini: Gran desempeño en matemáticas, programación y tareas visuales.
+- Integración con LangChain y LangGraph: Sí (se requiere acceso empresarial para algunos modelos).
+- Acceso: Vía API o suscripción Pro.
+
+GPT-5 (Próximamente)
+- Previsto: Capacidades unificadas, aún más avanzadas en razonamiento y procesamiento multimodal.
+- Integración con LangChain y LangGraph: Prevista (en preparación).
+- Acceso: Más adelante en 2025.
+
+Comparando los Modelos de OpenAI con los Mejores Modelos No-OpenAI en 2025
+Claude 3.7 Sonnet (Anthropic)
+- Tipo: Texto, datos estructurados, imágenes
+- Ventana de contexto: Modo de Pensamiento Extendido
+- Fortalezas: Razonamiento híbrido rápido/profundo, Claude Code para desarrolladores.
+- Integración con LangChain y LangGraph: Sí (soporte nativo).
+- Acceso: API de Claude e integraciones.
+
+Gemini 2.0 Flash (Google DeepMind)
+- Tipo: Multimodal (texto, vídeo, datos del mundo real)
+- Ventana de contexto: 1 millón de tokens
+- Fortalezas: Agentes de IA con capacidad de acción, respuestas en tiempo real, integración con el ecosistema de Google.
+- Integración con LangChain y LangGraph: Sí (a través de plugins experimentales).
+- Acceso: A través de la API de Gemini Pro.
+
+Grok 3 (xAI / Elon Musk)
+- Tipo: Multimodal
+- Ventana de contexto: No especificada claramente
+- Fortalezas: Integración con redes sociales (X), razonamiento mejorado.
+- Integración con LangChain y LangGraph: No (requiere SDKs personalizados).
+- Acceso: A través de la plataforma X y APIs.
+
+DeepSeek R1 (DeepSeek)
+- Tipo: Texto y razonamiento lógico
+- Ventana de contexto: No divulgada
+- Fortalezas: Modelo open-source centrado en tareas matemáticas y lógicas.
+- Integración con LangChain y LangGraph: Sí (conectores desarrollados por la comunidad).
+- Acceso: Licencia MIT (código abierto).
+
+LLaMA 4 (Meta) – Scout & Maverick
+- Tipo: Multimodal (texto, imagen)
+- Ventana de contexto: Scout: 10 millones de tokens; Maverick: 1 millón
+- Fortalezas: Arquitectura Mixture-of-Experts, contexto ultralargo, multilingüe.
+- Integración con LangChain y LangGraph: Sí (Meta ofrece soporte oficial).
+- Acceso: Pesos abiertos para uso comercial e investigación.
+
+Qwen 2.5 Max (Alibaba)
+- Tipo: Multimodal (texto, imagen, audio)
+- Ventana de contexto: No especificada
+- Fortalezas: Código abierto, integración con productos de Alibaba.
+- Integración con LangChain y LangGraph: Parcial (soporte en crecimiento).
+- Acceso: Open-source bajo Licencia Qwen.
+
+Gemma (Google)
+- Tipo: Generación de texto con enfoque académico
+- Ventana de contexto: No especificada
+- Fortalezas: Alto rendimiento en redacción técnica y académica.
+- Integración con LangChain y LangGraph: Sí (experimental, en expansión).
+- Acceso: Código abierto.
+
+Mistral 7B (Mistral)
+- Tipo: Modelo compacto de texto
+- Ventana de contexto: Limitada
+- Fortalezas: Alta eficiencia para dispositivos con recursos limitados.
+- Integración con LangChain y LangGraph: Sí (soporte oficial).
+- Acceso: Código abierto.
+
+Phi-3 (Microsoft)
+- Tipo: Modelo pequeño (SLM)
+- Ventana de contexto: No especificada
+- Fortalezas: Alta eficiencia, integración con productos de Microsoft.
+- Integración con LangChain y LangGraph: Sí (disponible mediante puente API).
+- Acceso: Licencia MIT.
+
+Resumen Comparativo
+Multimodalidad
+La mayoría de los modelos punteros en 2025 son multimodales. Para tareas que implican procesamiento o generación de imágenes, audio o vídeo, los modelos de OpenAI, Google, Anthropic y Meta son los preferidos.
+
+Modelos con capacidades multimodales (texto + imágenes/audio/video):
+
+✅ Sí: GPT-4o, GPT-4.1, GPT-4.5, Serie o, Claude 3.7, Gemini 2.0, Grok 3, DeepSeek R1 (limitado), LLaMA 4, Qwen 2.5 Max
+
+❌ No: Gemma, Mistral 7B, Phi-3
+
+Ventana de Contexto
+Para procesamiento de documentos largos o aplicaciones con gran memoria, LLaMA 4, Gemini 2.0 y GPT-4.1 ofrecen el mejor rendimiento.
+
+Modelos con mayor capacidad de contexto:
+
+🟢 Muy grande (≥1M tokens): GPT-4.1, Gemini 2.0, LLaMA 4
+
+🟡 Grande (100K–500K): GPT-4o
+
+🔴 No especificada o pequeña: GPT-4.5, Serie o, Claude 3.7, Grok 3, DeepSeek R1, Qwen 2.5 Max, Gemma, Phi-3, Mistral 7B
+
+
+
+Código Abierto
+
+Si el código abierto es esencial (para transparencia, autoalojamiento o bajo coste), destacan Meta, DeepSeek, Alibaba, Mistral y Microsoft.
+
+Modelos disponibles para uso/modificación libre:
+
+✅ Sí: DeepSeek R1, LLaMA 4, Qwen 2.5 Max, Gemma, Mistral 7B, Phi-3
+
+❌ No: GPT-4o, GPT-4.1, GPT-4.5, Serie o, Claude 3.7, Gemini 2.0, Grok 3
+
+
+
+Integración con LangChain / LangGraph
+
+La mayoría de los modelos líderes se integran con LangChain/LangGraph, permitiendo flujos de trabajo complejos. Solo Grok 3 carece por ahora de integración pública.
+
+Modelos compatibles con flujos de trabajo y agentes:
+
+✅ Soporte oficial o completo: GPT-4o, GPT-4.1, GPT-4.5, Serie o, Claude 3.7, Gemini 2.0, DeepSeek R1, LLaMA 4, Mistral 7B, Phi-3
+
+🟡 Soporte parcial o comunitario: Qwen 2.5 Max, Gemma
+
+❌ No compatible: Grok 3
+
+
+
+
+
 
 
