@@ -730,3 +730,125 @@ print(response)
 print("\n----------\n")
 ```
 
+## LangChain Basic: Cómo trabajar con Datos. RAG Basics.
+
+- Data Loaders
+- Large data assets y RAG
+- Splitters
+- Embeddings
+- Vector stores
+- Retrievers, top k results, indexing
+
+Basic Langchain
+- Data in (txt, pdf, csv, sql, xls, html, png, etc.)
+- Actions (RAG, splitters, embeddings, vector stores)
+- LLMs
+- Data out
+- Actions (RAG, retrievers, top k results)
+
+### Data Loaders: carga archivos de datos y pregunta al LLM sobre sus contenidos
+- https://python.langchain.com/v0.1/docs/modules/data_connection/document_loaders/
+- https://python.langchain.com/v0.1/docs/integrations/document_loaders/
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader("./data/be-good.txt")
+
+loaded_data = loader.load()
+
+print("\n----------\n")
+
+print("Loaded TXT file:")
+
+print("\n----------\n")
+#print(loaded_data)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import CSVLoader
+
+loader = CSVLoader('./data/Street_Tree_List.csv')
+
+loaded_data = loader.load()
+
+print("\n----------\n")
+
+print("Loaded CSV file:")
+
+print("\n----------\n")
+#print(loaded_data)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import UnstructuredHTMLLoader
+
+loader = UnstructuredHTMLLoader('./data/100-startups.html')
+
+loaded_data = loader.load()
+
+print("\n----------\n")
+
+print("Loaded HTML page:")
+
+print("\n----------\n")
+#print(loaded_data)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader('./data/5pages.pdf')
+
+loaded_data = loader.load_and_split()
+
+print("\n----------\n")
+
+print("Loaded HTML page:")
+
+print("\n----------\n")
+#print(loaded_data[0].page_content)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import WikipediaLoader
+
+name = "JFK"
+
+loader = WikipediaLoader(query=name, load_max_docs=1)
+
+loaded_data = loader.load()[0].page_content
+
+from langchain_core.prompts import ChatPromptTemplate
+
+chat_template = ChatPromptTemplate.from_messages(
+    [
+        ("human", "Answer this {question}, here is some extra {context}"),
+    ]
+)
+
+messages = chat_template.format_messages(
+    question="What was the full name of JFK?",
+    context=loaded_data
+)
+
+response = chatModel.invoke(messages)
+
+print("\n----------\n")
+
+print("Respond from Wikipedia: What was the full name of JFK?")
+
+print("\n----------\n")
+#print(response.content)
+
+print("\n----------\n")
+```
