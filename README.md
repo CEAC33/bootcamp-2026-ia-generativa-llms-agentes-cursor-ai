@@ -1916,20 +1916,17 @@ from langchain_openai import ChatOpenAI
 
 model = ChatOpenAI(model="gpt-3.5-turbo-0125")
 
+"""
+RunnablePassthrough
+It does not do anything to the input data.
+Let's see it in a very simple example: a chain with just RunnablePassthrough() will output the original input without any modification.
+"""
+
 from langchain_core.runnables import RunnablePassthrough
 
 chain = RunnablePassthrough()
 
 response = chain.invoke("Abram")
-
-"""
-RunnableParallel
-- We will use RunnableParallel() for running tasks in parallel.
-- This is probably the most important and most useful Runnable from LangChain.
-- In the following chain, RunnableParallel is going to run these two tasks in parallel:
-  - operation_a will use RunnablePassthrough.
-  - operation_b will use RunnableLambda with the russian_lastname function.
-"""
 
 print("\n----------\n")
 
@@ -1939,6 +1936,12 @@ print("\n----------\n")
 #print(response)
 
 print("\n----------\n")
+
+"""
+RunnableLambda
+To use a custom function inside a LCEL chain we need to wrap it up with RunnableLambda.
+Let's define a very simple function to create Russian lastnames:
+"""
 
 def russian_lastname(name: str) -> str:
     return f"{name}ovich"
@@ -1957,6 +1960,15 @@ print("\n----------\n")
 #print(response)
 
 print("\n----------\n")
+
+"""
+RunnableParallel
+- We will use RunnableParallel() for running tasks in parallel.
+- This is probably the most important and most useful Runnable from LangChain.
+- In the following chain, RunnableParallel is going to run these two tasks in parallel:
+  - operation_a will use RunnablePassthrough.
+  - operation_b will use RunnableLambda with the russian_lastname function.
+"""
 
 from langchain_core.runnables import RunnableParallel
 
