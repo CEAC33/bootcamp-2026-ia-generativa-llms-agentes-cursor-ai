@@ -1726,3 +1726,171 @@ print("\n----------\n")
   - First, we apply .invoke() to the prompt.
   - Then, with the previous output, we apply .invoke() to the model.
   - And finally, with the previous output, we apply .invoke() to the output parser.
+ 
+### El concepto clave de LCEL que debes dominar: El Runnable Execution Order
+
+LCEL Chain
+- **An LCEL Chain is a Sequence of Runnables.**
+- Almost any component in LangChain (prompts, models, output parsers, vector store retrievers, tools, etc) can be used as a Runnable.
+- Runnables can be chained together using the pipe operator |. The resulting chains of runnables are also runnables themselves.
+- The order (left to right) of the elements in a LCEL chain matters.
+
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("tell me a curious fact about {soccer_player}")
+
+output_parser = StrOutputParser()
+
+chain = prompt | model | output_parser
+
+response = chain.invoke({"soccer_player": "Ronaldo"})
+
+print("\n----------\n")
+
+print("LCEL chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+
+prompt.invoke({"soccer_player": "Ronaldo"})
+
+from langchain_core.messages.human import HumanMessage
+
+output_after_first_step = [HumanMessage(content='tell me a curious fact about Ronaldo')]
+
+model.invoke(output_after_first_step)
+
+from langchain_core.messages.ai import AIMessage
+
+output_after_second_step = AIMessage(content='One curious fact about Cristiano Ronaldo is that he does not have any tattoos on his body. Despite the fact that many professional athletes have tattoos, Ronaldo has chosen to keep his body ink-free.', response_metadata={'token_usage': {'completion_tokens': 38, 'prompt_tokens': 14, 'total_tokens': 52}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'finish_reason': 'stop', 'logprobs': None}, id='run-c9812511-043a-458a-bfb8-005bc0d057fb-0', usage_metadata={'input_tokens': 14, 'output_tokens': 38, 'total_tokens': 52})
+
+response = output_parser.invoke(output_after_second_step)
+
+print("\n----------\n")
+
+print("After replicating the process without using a LCEL chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+- All the components of the chain are Runnables.
+- **When we write chain.invoke() we are using invoke with all the componentes of the chain in an orderly manner:**
+  - First, we apply .invoke() with the user input to the prompt template.
+  - Then, with the completed prompt, we apply .invoke() to the model.
+  - And finally, we apply .invoke() to the output parser with the output of the model.
+- IMPORTANT: the order of operations in a chain matters. If you try to execute the previous chain with the components in different order, the chain will fail.
+
+<img width="889" height="407" alt="Screenshot 2025-09-29 at 10 04 44 p m" src="https://github.com/user-attachments/assets/cdef274c-1239-46f2-aafe-afc35428ec73" />
+
+Ways to execute Runnables
+- Remember:
+  - An LCEL Chain is a Sequence of Runnables.
+  - Almost any component in LangChain (prompts, models, output parsers, etc) can be used as a Runnable.
+  - Runnables can be chained together using the pipe operator |. The resulting chains of runnables are also runnables themselves.
+  - The order (left to right) of the elements in a LCEL chain matters.
+
+### Formas alternativas de ejecutar Runnables LCEL: invoke, stream, batch
+
+Alternative ways to execute runnables
+- Invoke, Stream and Batch.
+
+LCEL Chains/Runnables are used with:
+- chain.invoke(): call the chain on an input.
+- chain.stream(): call the chain on an input and stream back chunks of the response.
+- chain.batch(): call the chain on a list of inputs.
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("Tell me one sentence about {politician}.")
+chain = prompt | model
+
+response = chain.invoke({"politician": "Churchill"})
+
+print("\n----------\n")
+
+print("Response with invoke:")
+
+print("\n----------\n")
+print(response.content)
+
+print("\n----------\n")
+    
+print("\n----------\n")
+
+print("Response with stream:")
+
+print("\n----------\n")
+for s in chain.stream({"politician": "F.D. Roosevelt"}):
+    print(s.content, end="", flush=True)
+
+print("\n----------\n")
+
+response = chain.batch([{"politician": "Lenin"}, {"politician": "Stalin"}])
+
+print("\n----------\n")
+
+print("Response with batch:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+The for loop explained in simple terms
+This for loop is used to show responses piece by piece as they are received. Here's how it works in simple terms:
+
+1. **Getting Responses in Parts:** The loop receives pieces of a response from the system one at a time. In this example, the system is responding with information about the politician "F.D. Roosevelt."
+
+2. **Printing Out Responses Immediately:** Each time a new piece of the response is received, it immediately prints it out. The setup makes sure there are no new lines between parts, so it all looks like one continuous response.
+
+3. **No Waiting:** By using this loop, you don't have to wait for the entire response to be ready before you start seeing parts of it. This makes it feel quicker and more like a conversation.
+
+This way, the loop helps provide a smoother and more interactive way of displaying responses from the system as they are generated.
+
+**The for loop explained in technical terms**
+
+This for loop is used to handle streaming output from a language model response. Here’s a breakdown of its functionality and context:
+
+1. **Iteration through Streamed Output:** The for loop iterates over the generator returned by chain.stream(...). The stream method of the chain object (which is a combination of a prompt template and a language model) is designed to yield responses incrementally. This is particularly useful when responses from a model are long or need to be displayed in real-time.
+
+2. **Data Fetching:** In this loop, s represents each piece of content that is streamed back from the model as the response is being generated. The model in this case is set up to respond with information about the politician "F.D. Roosevelt".
+
+3. **Output Handling:** Inside the loop, print(s.content, end="", flush=True) is called for each piece of streamed content. The print function is customized with:
+
+  - end="": This parameter ensures that each piece of content is printed without adding a new line after each one, thus allowing the response to appear continuous on a single line.
+  - flush=True: This parameter forces the output buffer to be flushed immediately after each print statement, ensuring that each piece of content is displayed to the user as soon as it is received without any delay.
+
+By using this loop, the code is able to display each segment of the model's response as it becomes available, making the user interface more dynamic and responsive, especially for real-time applications where prompt feedback is beneficial.
+
+LCEL Chains/Runnables can be also used asynchronously:
+- chain.ainvoke(): call the chain on an input.
+- chain.astream(): call the chain on an input and stream back chunks of the response.
+- chain.abatch(): call the chain on a list of inputs.
