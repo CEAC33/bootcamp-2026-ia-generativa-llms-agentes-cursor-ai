@@ -2311,3 +2311,194 @@ print(response)
 print("\n----------\n")
 ```
 
+### Built-in functions para LCEL Runnables: bind y assign
+
+Main built-in LCEL functions for runnables
+
+Contents
+- .bind()
+- .assign()
+
+```
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("tell me a curious fact about {soccer_player}")
+
+output_parser = StrOutputParser()
+
+"""
+- The "pipe" operator | is the main element of the LCEL chains.
+- The order (left to right) of the elements in a LCEL chain matters.
+- An LCEL Chain is a Sequence of Runnables.
+"""
+
+chain = prompt | model | output_parser
+
+response = chain.invoke({"soccer_player": "Ronaldo"})
+
+"""
+- All the components of the chain are Runnables.
+- When we write chain.invoke() we are using invoke with all the componentes of the chain in an orderly manner:
+  - First, we apply .invoke() to the prompt.
+  - Then, with the previous output, we apply .invoke() to the model.
+  - And finally, with the previous output, we apply .invoke() to the output parser.
+"""
+
+print("\n----------\n")
+
+print("Basic LCEL chain:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+"""
+Use of .bind() to add arguments to a Runnable in a LCEL Chain
+- For example, we can add an argument to stop the model response when it reaches the word "Ronaldo":
+"""
+
+chain = prompt | model.bind(stop=["Ronaldo"]) | output_parser
+
+response = chain.invoke({"soccer_player": "Ronaldo"})
+
+print("\n----------\n")
+
+print("Basic LCEL chain with .bind():")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+"""
+Use of .bind() to call an OpenAI Function in a LCEL Chain
+"""
+
+functions = [
+    {
+      "name": "soccerfacts",
+      "description": "Curious facts about a soccer player",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question for the curious facts about a soccer player"
+          },
+          "answer": {
+            "type": "string",
+            "description": "The answer to the question"
+          }
+        },
+        "required": ["question", "answer"]
+      }
+    }
+  ]
+
+from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
+
+chain = (
+    prompt
+    | model.bind(function_call={"name": "soccerfacts"}, functions= functions)
+    | JsonOutputFunctionsParser()
+)
+
+response = chain.invoke({"soccer_player": "Mbappe"})
+
+"""
+Note: OpenAI API has deprecated functions in favor of tools. See here for more info.
+https://python.langchain.com/v0.1/docs/modules/agents/agent_types/openai_functions_agent/
+"""
+
+print("\n----------\n")
+
+"""
+Use of .bind() to attach OpenAI tools
+Note: In the OpenAI Chat API, functions are now considered a legacy options that is deprecated in favor of tools. If you're creating agents using OpenAI LLM models, you should be using OpenAI Tools rather than OpenAI functions.
+
+While you should generally use the .bind_tools() method for tool-calling models, you can also bind provider-specific args directly if you want lower level control:
+
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA",
+                    },
+                    "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
+                },
+                "required": ["location"],
+            },
+        },
+    }
+]
+
+model = ChatOpenAI(model="gpt-3.5-turbo").bind(tools=tools)
+model.invoke("What's the weather in SF, NYC and LA?")
+"""
+
+print("Call OpenAI Function in LCEL chain with .bind():")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+"""
+The assign() function allows adding keys to a chain
+Example: we will create a key name "operation_b" assigned to a custom function with a RunnableLambda.
+We will start with a very basic chain with just RunnablePassthrough:
+"""
+
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda
+
+chain = RunnableParallel({"original_input": RunnablePassthrough()})
+
+chain.invoke("whatever")
+# {'original_input': 'whatever'}
+"""
+- As you can see, right now this chain is only assigning the user input to the "original_input" variable.
+- Let's now add the new key "uppercase" with the assign function.
+- In the new "uppercase" key, we will use a RunnableLambda with the custom function named make_uppercase
+"""
+
+def make_uppercase(arg):
+    return arg["original_input"].upper()
+
+chain = RunnableParallel({"original_input": RunnablePassthrough()}).assign(uppercase=RunnableLambda(make_uppercase))
+
+response = chain.invoke("whatever")
+# {'original_input': 'whatever', 'uppercase': 'WHATEVER'}
+
+"""
+- As you can see, the output of the chain has now 2 keys: original_input and uppercase.
+- In the uppercase key, we can see that the make_uppercase function has been applied to the user input.
+"""
+
+print("\n----------\n")
+
+print("Basic LCEL chain with .assign():")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
