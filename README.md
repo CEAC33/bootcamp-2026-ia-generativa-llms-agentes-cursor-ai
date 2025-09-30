@@ -1894,3 +1894,395 @@ LCEL Chains/Runnables can be also used asynchronously:
 - chain.ainvoke(): call the chain on an input.
 - chain.astream(): call the chain on an input and stream back chunks of the response.
 - chain.abatch(): call the chain on a list of inputs.
+
+### Built-in LCEL Runnables: passthrough, lambda, parallel, branch
+
+Main built-in LCEL Runnables
+
+Contents
+- RunnablePassthrough.
+- RunnableLambda.
+- RunnableParallel.
+  - itemgetter.
+- RunnableBranch.
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.runnables import RunnablePassthrough
+
+chain = RunnablePassthrough()
+
+response = chain.invoke("Abram")
+
+
+# RunnableParallel
+# - We will use RunnableParallel() for running tasks in parallel.
+# - This is probably the most important and most useful Runnable from LangChain.
+# - In the following chain, RunnableParallel is going to run these two tasks in parallel:
+#   - operation_a will use RunnablePassthrough.
+#   - operation_b will use RunnableLambda with the russian_lastname function.
+
+print("\n----------\n")
+
+print("Chain with RunnablePassthrough:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+def russian_lastname(name: str) -> str:
+    return f"{name}ovich"
+
+from langchain_core.runnables import RunnableLambda
+
+chain = RunnablePassthrough() | RunnableLambda(russian_lastname)
+
+response = chain.invoke("Abram")
+
+print("\n----------\n")
+
+print("Chain with RunnableLambda:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+from langchain_core.runnables import RunnableParallel
+
+chain = RunnableParallel(
+    {
+        "operation_a": RunnablePassthrough(),
+        "operation_b": RunnableLambda(russian_lastname)
+    }
+)
+
+response = chain.invoke("Abram")
+
+print("\n----------\n")
+
+print("Chain with RunnableParallel:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+# Instead of using RunnableLambda, now we are going to use a lambda function and we will invoke the chain with two inputs:
+
+chain = RunnableParallel(
+    {
+        "operation_a": RunnablePassthrough(),
+        "soccer_player": lambda x: x["name"]+"ovich"
+    }
+)
+
+response = chain.invoke({
+    "name1": "Jordam",
+    "name": "Abram"
+})
+
+# - See how the lambda function is taking the "name" input.
+
+print("\n----------\n")
+
+print("Chain with RunnableParallel:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+# We can add more Runnables to the chain
+# - In the following example, the prompt Runnable will take the output of the RunnableParallel:
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("tell me a curious fact about {soccer_player}")
+
+output_parser = StrOutputParser()
+
+def russian_lastname_from_dictionary(person):
+    return person["name"] + "ovich"
+
+chain = RunnableParallel(
+    {
+        "operation_a": RunnablePassthrough(),
+        "soccer_player": RunnableLambda(russian_lastname_from_dictionary),
+        "operation_c": RunnablePassthrough(),
+    }
+) | prompt | model | output_parser
+
+response = chain.invoke({
+    "name1": "Jordam",
+    "name": "Abram"
+})
+
+# As you saw, the prompt Runnable took "Abramovich", the output of the RunnableParallel, as the value for the "soccer_player" variable.
+
+print("\n----------\n")
+
+print("Chain with RunnableParallel:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+from langchain_community.vectorstores import FAISS
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+vectorstore = FAISS.from_texts(
+    ["AI Accelera has trained more than 10,000 Alumni from all continents and top companies"], embedding=OpenAIEmbeddings()
+)
+
+retriever = vectorstore.as_retriever()
+
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+model = ChatOpenAI(model="gpt-3.5-turbo")
+
+retrieval_chain = (
+    RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+response = retrieval_chain.invoke("who are the Alumni of AI Accelera?")
+
+# Important: the syntax of RunnableParallel can have several variations.
+# - When composing a RunnableParallel with another Runnable you do not need to wrap it up in the RunnableParallel class. Inside a chain, the next three # syntaxs are equivalent:
+#   - RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
+#   - RunnableParallel(context=retriever, question=RunnablePassthrough())
+#   - {"context": retriever, "question": RunnablePassthrough()}
+
+print("\n----------\n")
+
+print("Chain with Advanced Use of RunnableParallel:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+# Using itemgetter with RunnableParallel
+# - When you are calling the LLM with several different input variables.
+
+from operator import itemgetter
+
+from langchain_community.vectorstores import FAISS
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+
+model = ChatOpenAI(model="gpt-3.5-turbo")
+
+vectorstore = FAISS.from_texts(
+    ["AI Accelera has trained more than 5,000 Enterprise Alumni."], embedding=OpenAIEmbeddings()
+)
+retriever = vectorstore.as_retriever()
+
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+
+Answer in the following language: {language}
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+chain = (
+    {
+        "context": itemgetter("question") | retriever,
+        "question": itemgetter("question"),
+        "language": itemgetter("language"),
+    }
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+response = chain.invoke({"question": "How many Enterprise Alumni has trained AI Accelera?", "language": "Pirate English"})
+
+print("\n----------\n")
+
+print("Chain with RunnableParallel and itemgetter:")
+
+print("\n----------\n")
+#print(response)
+
+print("\n----------\n")
+
+"""
+RunnableBranch: Router Chain
+- A RunnableBranch is a special type of runnable that allows you to define a set of conditions and runnables to execute based on the input.
+- A RunnableBranch is initialized with a list of (condition, runnable) pairs and a default runnable. It selects which branch by passing each condition the input it's invoked with. It selects the first condition to evaluate to True, and runs the corresponding runnable to that condition with the input.
+- For advanced uses, a custom function may be a better alternative than RunnableBranch.
+The following advanced example can classify and respond to user questions based on specific topics like rock, politics, history, sports, or general inquiries. It uses some new topics that we will explain in the following lesson. Here’s a simplified explanation of each part:
+
+1. Prompt Templates: Each template is tailored for a specific topic:
+
+- rock_template: Configured for rock and roll related questions.
+- politics_template: Tailored to answer questions about politics.
+- history_template: Designed for queries related to history.
+- sports_template: Set up to address sports-related questions.
+- general_prompt: A general template for queries that don't fit the specific categories.
+Each template includes a placeholder {input} where the actual user question will be inserted.
+
+2. RunnableBranch: This is a branching mechanism that selects which template to use based on the topic of the question. It evaluates conditions (like x["topic"] == "rock") to determine the topic and uses the appropriate prompt template.
+
+3. Topic Classifier: A Pydantic class that classifies the topic of a user's question into one of the predefined categories (rock, politics, history, sports, or general).
+
+4. Classifier Chain:
+- Chain: Processes the user's input to predict the topic.
+- Parser: Extracts the predicted topic from the classifier's output.
+
+5. RunnablePassthrough: This component feeds the user's input and the classified topic into the RunnableBranch.
+
+6. Final Chain:
+
+- The user's input is first processed to classify its topic.
+- The appropriate prompt is then selected based on the classified topic.
+- The selected prompt is used to formulate a question which is then sent to a model (like ChatOpenAI).
+- The model’s response is parsed as a string and returned.
+
+7. Execution:
+
+- The chain is invoked with a sample question, "Who was Napoleon Bonaparte?"
+- Based on the classification, it selects the appropriate template, generates a query to the chat model, and processes the response.
+
+The system effectively creates a dynamic response generator that adjusts the way it answers based on the topic of the inquiry, making use of specialized knowledge for different subjects.
+"""
+
+from langchain.prompts import PromptTemplate
+
+rock_template = """You are a very smart rock and roll professor. \
+You are great at answering questions about rock and roll in a concise\
+and easy to understand manner.
+
+Here is a question:
+{input}"""
+
+rock_prompt = PromptTemplate.from_template(rock_template)
+
+politics_template = """You are a very good politics professor. \
+You are great at answering politics questions..
+
+Here is a question:
+{input}"""
+
+politics_prompt = PromptTemplate.from_template(politics_template)
+
+history_template = """You are a very good history teacher. \
+You have an excellent knowledge of and understanding of people,\
+events and contexts from a range of historical periods.
+
+Here is a question:
+{input}"""
+
+history_prompt = PromptTemplate.from_template(history_template)
+
+sports_template = """ You are a sports teacher.\
+You are great at answering sports questions.
+
+Here is a question:
+{input}"""
+
+sports_prompt = PromptTemplate.from_template(sports_template)
+
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnableBranch
+
+general_prompt = PromptTemplate.from_template(
+    "You are a helpful assistant. Answer the question as accurately as you can.\n\n{input}"
+)
+prompt_branch = RunnableBranch(
+  (lambda x: x["topic"] == "rock", rock_prompt),
+  (lambda x: x["topic"] == "politics", politics_prompt),
+  (lambda x: x["topic"] == "history", history_prompt),
+  (lambda x: x["topic"] == "sports", sports_prompt),
+  general_prompt
+)
+
+from typing import Literal
+
+from langchain.pydantic_v1 import BaseModel
+from langchain.output_parsers.openai_functions import PydanticAttrOutputFunctionsParser
+from langchain_core.utils.function_calling import convert_to_openai_function
+
+
+class TopicClassifier(BaseModel):
+    "Classify the topic of the user question"
+    
+    topic: Literal["rock", "politics", "history", "sports"]
+    "The topic of the user question. One of 'rock', 'politics', 'history', 'sports' or 'general'."
+
+classifier_function = convert_to_openai_function(TopicClassifier)
+
+llm = ChatOpenAI().bind(functions=[classifier_function], function_call={"name": "TopicClassifier"}) 
+
+parser = PydanticAttrOutputFunctionsParser(pydantic_schema=TopicClassifier, attr_name="topic")
+
+classifier_chain = llm | parser
+
+"""
+The classifier_function classifies or categorizes the topic of a user's question into specific categories such as "rock," "politics," "history," or "sports." Here’s how it works in simple terms:
+
+1. Conversion to Function: It converts the TopicClassifier Pydantic class, which is a predefined classification system, into a function that can be easily used with LangChain. This conversion process involves wrapping the class so that it can be integrated and executed within an OpenAI model.
+
+2. Topic Detection: When you input a question, this function analyzes the content of the question to determine which category or topic it belongs to. It looks for keywords or patterns that match specific topics. For example, if the question is about a rock band, the classifier would identify the topic as "rock."
+
+3. utput: The function outputs the identified topic as a simple label, like "rock" or "history." This label is then used by other parts of the LangChain to decide how to handle the question, such as choosing the right template for formulating a response.
+
+In essence, the classifier_function acts as a smart filter that helps the system understand what kind of question is being asked so that it can respond more accurately and relevantly.
+"""
+
+from operator import itemgetter
+
+from langchain.schema.output_parser import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough
+
+
+final_chain = (
+    RunnablePassthrough.assign(topic=itemgetter("input") | classifier_chain) 
+    | prompt_branch 
+    | ChatOpenAI()
+    | StrOutputParser()
+)
+
+response = final_chain.invoke(
+    {"input": "Who was Napoleon Bonaparte?"}
+)
+
+print("\n----------\n")
+
+print("Chain with RunnableBranch:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
