@@ -2164,7 +2164,7 @@ print("\n----------\n")
 RunnableBranch: Router Chain
 - A RunnableBranch is a special type of runnable that allows you to define a set of conditions and runnables to execute based on the input.
 - A RunnableBranch is initialized with a list of (condition, runnable) pairs and a default runnable. It selects which branch by passing each condition the input it's invoked with. It selects the first condition to evaluate to True, and runs the corresponding runnable to that condition with the input.
-- For advanced uses, a custom function may be a better alternative than RunnableBranch.
+- For advanced uses, a custom function (https://python.langchain.com/v0.1/docs/expression_language/how_to/routing/) may be a better alternative than RunnableBranch.
 The following advanced example can classify and respond to user questions based on specific topics like rock, politics, history, sports, or general inquiries. It uses some new topics that we will explain in the following lesson. Here’s a simplified explanation of each part:
 
 1. Prompt Templates: Each template is tailored for a specific topic:
