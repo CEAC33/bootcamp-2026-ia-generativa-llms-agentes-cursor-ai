@@ -2882,3 +2882,100 @@ print("\n----------\n")
 
 print("\n----------\n")
 ```
+
+### LCEL chains y RAG: Un estudio más detallado
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+import bs4
+from langchain import hub
+from langchain_chroma import Chroma
+from langchain_community.document_loaders import WebBaseLoader
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+loader = WebBaseLoader(
+    web_paths=("https://lilianweng.github.io/posts/2023-06-23-agent/",),
+    bs_kwargs=dict(
+        parse_only=bs4.SoupStrainer(
+            class_=("post-content", "post-title", "post-header")
+        )
+    ),
+)
+
+docs = loader.load()
+
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+
+splits = text_splitter.split_documents(docs)
+
+vectorstore = Chroma.from_documents(documents=splits, embedding=OpenAIEmbeddings())
+
+retriever = vectorstore.as_retriever()
+
+prompt = hub.pull("rlm/rag-prompt")
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+"""
+See below that the prompt we have imported from the hub has 2 variables: "context" and "question".
+
+prompt
+# ChatPromptTemplate(input_variables=['context', 'question'], metadata={'lc_hub_owner': 'rlm', 'lc_hub_repo': 'rag-prompt', 'lc_hub_commit_hash': '50442af133e61576e74536c6556cefe1fac147cad032f4377b60c436e6cdcb6e'}, messages=[HumanMessagePromptTemplate(prompt=PromptTemplate(input_variables=['context', 'question'], template="You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.\nQuestion: {question} \nContext: {context} \nAnswer:"))])
+"""
+
+response = rag_chain.invoke("What is Task Decomposition?")
+# 'Task Decomposition is the process of breaking down a task into smaller, more manageable subtasks in order to facilitate the completion of the overall task.'
+
+"""
+- This is how this chain works when we invoke it:
+  - "What is Task Decomposition?" is passed as unique input.
+  - context executes the retriever over the input.
+  - format_docs executes the formatter function over the input.
+  - The input is assigned to question.
+  - the prompt is defined using the previous question and context variables.
+  - the model is executed with the previous prompt.
+
+  - the output parser is executed over the response of the model.
+Note: what does the previos formatter function do?
+The format_docs function takes a list of objects named docs. Each object in this list is expected to have an attribute named page_content, which stores textual content for each document.
+
+The purpose of the function is to extract the page_content from each document in the docs list and then combine these contents into a single string. The contents of different documents are separated by two newline characters (\n\n), which means there will be an empty line between the content of each document in the final string. This formatting choice makes the combined content easier to read by clearly separating the content of different documents.
+
+Here's a breakdown of how the function works:
+
+1. The for doc in docs part iterates over each object in the docs list.
+2. For each iteration, doc.page_content accesses the page_content attribute of the current document, which contains its textual content.
+3. The join method then takes these pieces of text and concatenates them into a single string, inserting \n\n between each piece to ensure they are separated by a blank line in the final result.
+
+The function ultimately returns this newly formatted single string containing all the document contents, neatly separated by blank lines.
+"""
+
+print("\n----------\n")
+
+print("Chains in RAG:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
