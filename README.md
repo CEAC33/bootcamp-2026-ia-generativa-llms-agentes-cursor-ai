@@ -1365,3 +1365,205 @@ print(response[0].page_content)
 
 print("\n----------\n")
 ```
+
+### RAG con LCEL: Primer vistazo a la solución compacta creada con LCEL
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_chroma import Chroma
+
+# Load the document, split it into chunks, embed each chunk and load it into the vector store.
+loaded_document = TextLoader('./data/state_of_the_union.txt').load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+vector_db = Chroma.from_documents(chunks_of_text, OpenAIEmbeddings())
+
+question = "What did the president say about the John Lewis Voting Rights Act?"
+
+response = vector_db.similarity_search(question)
+
+print("\n----------\n")
+
+print("Ask the RAG App: What did the president say about the John Lewis Voting Rights Act?")
+
+print("\n----------\n")
+#print(response[0].page_content)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader("./data/state_of_the_union.txt")
+
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+
+loaded_document = loader.load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+embeddings = OpenAIEmbeddings()
+
+vector_db = FAISS.from_documents(chunks_of_text, embeddings)
+
+retriever = vector_db.as_retriever()
+
+response = retriever.invoke("what did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+
+print("Ask the RAG App with Retriever: What did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+#print(response[0].page_content)
+
+print("\n----------\n")
+
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+template = """Answer the question based only on the following context:
+
+{context}
+
+Question: {question}
+"""
+
+prompt = ChatPromptTemplate.from_template(template)
+
+model = ChatOpenAI()
+
+def format_docs(docs):
+    return "\n\n".join([d.page_content for d in docs])
+
+chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | model
+    | StrOutputParser()
+)
+
+response = chain.invoke("what did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+
+print("Ask the RAG App with LCEL: What did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+### Indexing: Método avanzado para gestionar documentos en vector stores
+
+- https://python.langchain.com/v0.1/docs/modules/data_connection/indexing/
+
+#### Indexing
+
+- Advanced way to manage and search through many documents in a vector store.
+
+**Indexing**
+
+LangChain Indexing an **advanced technique** designed to efficiently integrate and synchronize documents from various sources into a vector store. This is particularly useful for tasks like semantic searches, where the aim is to find documents with similar meanings rather than those that match on specific keywords.
+
+Core Features and Their Benefits
+1. Avoiding Duplication: By preventing the same content from being written multiple times into the vector store, the system conserves storage space and reduces redundancy.
+2. Change Detection: The API is designed to detect if a document has changed since the last index. If there are no changes, it avoids re-writing the document. This minimizes unnecessary write operations and saves computational resources.
+3. Efficient Handling of Embeddings: Embeddings for unchanged content are not recomputed, thus saving processing time and further enhancing system efficiency.
+   
+**Technical Mechanics: Record Management**
+
+The **RecordManager** is a pivotal component of the LangChain indexing system. It meticulously records each document's write activity into the vector store. Here's how it works:
+- Document Hash: Every document is hashed. This hash includes both the content and metadata, providing a unique fingerprint for each document.
+- Write Time and Source ID: Alongside the hash, the time the document was written and a source identifier are also stored. The source ID helps trace the document back to its origin, ensuring traceability and accountability.
+These details are crucial for ensuring that only necessary data handling operations are carried out, thereby enhancing efficiency and reducing the workload on the system.
+
+**Operational Efficiency and Cost Savings**
+
+By integrating these features, LangChain indexing not only streamlines the management of document indices but also leads to significant cost savings. This is achieved by:
+
+- Reducing the frequency and volume of data written to and read from the vector store.
+- Decreasing the computational demand required for re-indexing and re-computing embeddings.
+- Improving the overall speed and relevance of vector search results, which is vital for applications requiring rapid and accurate data retrieval.
+
+**Conclusion**
+
+The LangChain indexing API is a sophisticated tool that leverages modern database and hashing technologies to manage and search through large volumes of digital documents efficiently. It is especially valuable in environments where accuracy, efficiency, and speed of data retrieval are crucial, such as in academic research, business intelligence, and various fields of software development. This technology not only supports effective data management but also promotes cost-effectiveness by optimizing resource utilization.
+
+The Indexing API from LangChain is an advanced feature suitable for very experienced developers primarily due to its complexity and the sophisticated understanding required to implement and manage it effectively. Here's why, broken down into simpler terms:
+
+1. **Complex Integration:** The API is designed to handle documents from various sources and integrate them into a vector store for semantic searches. This requires understanding both the sources of the documents and the mechanics of vector stores, which deal with high-dimensional data representations.
+
+2. **Efficiency Management:** It involves sophisticated features like avoiding duplication of content, detecting changes in documents, and efficiently managing embeddings (data representations). These processes require a deep understanding of data structures, hashing, and optimization techniques to ensure the system is efficient and does not waste resources.
+
+3. Technical Operations:
+
+- **Record Management:** The RecordManager component is crucial in tracking each document’s activity in the vector store, using detailed information such as document hashes, write times, and source IDs. This level of detail in record management necessitates familiarity with database operations, data integrity, and possibly cryptographic hashing.
+- **Operational Efficiency and Cost Savings:** Implementing the indexing system effectively can lead to significant operational efficiencies and cost savings. However, this requires precise setup and tuning to reduce unnecessary computational demands and storage usage. Developers need to understand how to balance these factors to optimize performance and cost.
+  
+4. **Advanced Use Cases:** The API supports complex scenarios such as rapid and accurate data retrieval needed in fields like academic research, business intelligence, and software development. Each of these applications might require specialized knowledge to fully leverage the potential of the indexing API.
+
+5. **Risk of Misimplementation:** Incorrect implementation can lead to inefficient data handling, increased operational costs, and slower retrieval times, which is why a high level of expertise is necessary to avoid potential pitfalls.
+
+In conclusion, the LangChain Indexing API is an advanced tool that involves detailed and complex processes to manage large volumes of data efficiently. Its use is recommended for developers who are very experienced because it requires a strong understanding of database systems, data efficiency, and system integration. Proper utilization can greatly enhance the performance and cost-effectiveness of systems that rely on fast and accurate data retrieval.
+
+**A Simple Example**
+
+The LangChain Indexing API is a sophisticated tool that helps integrate and manage large sets of documents efficiently. To make it clearer, let's consider a simple example that illustrates how it could be used:
+
+Example Scenario: Managing Research Papers in a University Database
+
+**Context:** Imagine you are developing a system for a university's library to manage and search through thousands of research papers. The goal is to allow students and faculty to quickly find papers relevant to their interests based on content similarity, not just by keywords.
+
+**Step-by-Step Use of LangChain Indexing API:**
+
+1. **Gathering Documents:**
+- Collect digital copies of all research papers to be included in the system.
+- These might come from various departments or sources within the university.
+  
+2. **Integration into Vector Store:**
+- Each research paper is converted into a "vector" using text embedding techniques. A vector is a numerical representation that captures the essence of the paper's content.
+- These vectors are stored in a vector store, a specialized database for managing such data.
+  
+3. **Avoiding Duplication:**
+- As new papers are added, the LangChain Indexing API checks if a similar paper already exists in the vector store.
+- It uses a hash (a unique identifier generated from the paper’s content and metadata) to prevent the same paper from being stored multiple times, saving space and reducing clutter.
+
+4. **Change Detection:**
+- If a paper in the database is updated or revised, the API detects changes using the hash comparison.
+- It updates the vector representation only if changes are detected, saving on unnecessary computational resources.
+
+5. **Search and Retrieval:**
+- When a student queries the system looking for papers on a specific topic, like "quantum computing applications," the API helps retrieve the most relevant papers.
+- It does this by comparing the query's vector with those in the vector store and returning papers whose vectors are most similar in content, not just those that contain specific keywords.
+
+6. **Operational Efficiency:**
+- The system is optimized to handle large volumes of data efficiently, ensuring quick responses even when multiple users are accessing it simultaneously.
+- This efficiency is crucial during exam periods or when new research is published and interest peaks.
+
+
+**Conclusion**
+
+By using the LangChain Indexing API, the university library can manage its research papers more effectively, making them easily accessible based on content relevance. This leads to better research outcomes for students and faculty and maximizes the use of the library’s resources.
+
+This example demonstrates how the Indexing API not only simplifies the management of documents but also enhances the retrieval process, making it more aligned with the users' actual needs.
