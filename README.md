@@ -105,6 +105,8 @@ jupyter lab
 
 ## LangChain Basics
 
+https://github.com/AI-LLM-Bootcamp/b401
+
 - Data In (prompt, prompt template, chain)
 - LLM (closed source, open source)
 - Data Out (output parser)
@@ -731,6 +733,8 @@ print("\n----------\n")
 ```
 
 ## LangChain Basic: Cómo trabajar con Datos. RAG Basics.
+
+https://github.com/AI-LLM-Bootcamp/b402
 
 - Data Loaders
 - Large data assets y RAG
@@ -1567,3 +1571,87 @@ Example Scenario: Managing Research Papers in a University Database
 By using the LangChain Indexing API, the university library can manage its research papers more effectively, making them easily accessible based on content relevance. This leads to better research outcomes for students and faculty and maximizes the use of the library’s resources.
 
 This example demonstrates how the Indexing API not only simplifies the management of documents but also enhances the retrieval process, making it more aligned with the users' actual needs.
+
+## LangChain Basics: LCEL Chains y Runnables
+
+https://github.com/AI-LLM-Bootcamp/b403
+
+- Runnables
+- LCEL Chains: sequence of runnables
+- Runnable execution order
+- Runnable execution alternatives
+- Built-in runnables and functions
+- Basic LCEL chain operations
+
+Basic Lang Chain
+- Data In
+- Actions
+  - runnables
+  - chains
+  - built-in runnables
+  - built-in functions
+  - combining chains
+  - nesting chains
+  - fallback for chains
+- LLMs
+- Data Out
+
+### Una Chain LCEL Sencilla: Secuencia de Acciones, Secuencia de Runnables
+
+Simple Chain
+- Perform several actions in a particular order.
+
+Intro
+- Chains are sequences of actions with input or output data.
+- Since the emmergence of LCEL, LangChain is favouring LCEL chains over Traditional (Legacy) Built-in Chains, but these are still maintained and frequently used.
+
+  
+LangChain documentation on Chains
+- See the LCEL documentation page on Chains here. - https://python.langchain.com/v0.2/docs/how_to/sequence/
+- See the Legacy documentation page on Chains here. In this page you can see a list of the main built-in legacy chains. - https://python.langchain.com/v0.1/docs/modules/chains/
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+prompt = ChatPromptTemplate.from_template("tell me a curious fact about {politician}")
+
+chain = prompt | chatModel | StrOutputParser()
+
+response = chain.invoke({"politician": "JFK"})
+
+print("\n----------\n")
+
+print("Result from invoking the chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+What does StrOutputParser do?
+
+- The StrOutputParser is a specific tool within LangChain that simplifies the output from these language models. It takes the complex or structured output from the models and converts it into plain text (a string). This makes it easier to use this output in applications, like displaying it to users or processing it further for other purposes.
+  
+Specific Functions of StrOutputParser:
+
+- **For LLM Outputs:** If a language model produces output that is already in text form, StrOutputParser doesn’t change it; it just passes it through.
+- **For ChatModel Outputs:** If the output comes from a ChatModel (a type of language model designed for conversation), StrOutputParser extracts the main content from the structured output to make sure it ends up as plain text.
+
+```
+chain.invoke({"politician": "JFK"})
+```
+'One curious fact about JFK is that he was the first U.S. president to have been born in the 20th century. He was born on May 29, 1917, making him the first president born after the turn of the century.'
+
+
+
