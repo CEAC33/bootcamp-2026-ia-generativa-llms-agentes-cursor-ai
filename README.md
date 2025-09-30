@@ -1653,5 +1653,76 @@ chain.invoke({"politician": "JFK"})
 ```
 'One curious fact about JFK is that he was the first U.S. president to have been born in the 20th century. He was born on May 29, 1917, making him the first president born after the turn of the century.'
 
+### La Chain Legacy de LangChain vs La Nueva Chain de LCEL
+
+Intro to LCEL
+Intro
+- LCEL has become the backbone of the newest versions of LangChain.
+- Traditional chains are still supported, but treated as "Legacy" and have less functionality than the new LCEL chains.
+- Many students struggle with LCEL.
 
 
+Main goals of LCEL
+- Make it easy to build chains in a compact way.
+- Support advanced LangChain functionality.
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+model = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
+# LEGACY CHAIN
+from langchain.chains import LLMChain
+
+prompt = ChatPromptTemplate.from_template("tell me a curious fact about {soccer_player}")
+
+output_parser = StrOutputParser()
+
+traditional_chain = LLMChain(
+    llm=model,
+    prompt=prompt
+)
+
+response = traditional_chain.predict(soccer_player="Maradona")
+
+print("\n----------\n")
+
+print("Legacy chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+
+# New LCEL Chain
+# The "pipe" operator | is the main element of the LCEL chains.
+# The order (left to right) of the elements in a LCEL chain matters.
+# An LCEL Chain is a Sequence of Runnables.
+
+chain = prompt | model | output_parser
+
+response = chain.invoke({"soccer_player": "Ronaldo"})
+
+print("\n----------\n")
+
+print("LCEL chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+- All the components of the chain are Runnables.
+- When we write chain.invoke() we are using invoke with all the componentes of the chain in an orderly manner:
+  - First, we apply .invoke() to the prompt.
+  - Then, with the previous output, we apply .invoke() to the model.
+  - And finally, with the previous output, we apply .invoke() to the output parser.
