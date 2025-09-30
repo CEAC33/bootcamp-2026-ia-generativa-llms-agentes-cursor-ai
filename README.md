@@ -1922,13 +1922,14 @@ chain = RunnablePassthrough()
 
 response = chain.invoke("Abram")
 
-
-# RunnableParallel
-# - We will use RunnableParallel() for running tasks in parallel.
-# - This is probably the most important and most useful Runnable from LangChain.
-# - In the following chain, RunnableParallel is going to run these two tasks in parallel:
-#   - operation_a will use RunnablePassthrough.
-#   - operation_b will use RunnableLambda with the russian_lastname function.
+"""
+RunnableParallel
+- We will use RunnableParallel() for running tasks in parallel.
+- This is probably the most important and most useful Runnable from LangChain.
+- In the following chain, RunnableParallel is going to run these two tasks in parallel:
+  - operation_a will use RunnablePassthrough.
+  - operation_b will use RunnableLambda with the russian_lastname function.
+"""
 
 print("\n----------\n")
 
@@ -1977,7 +1978,9 @@ print("\n----------\n")
 
 print("\n----------\n")
 
-# Instead of using RunnableLambda, now we are going to use a lambda function and we will invoke the chain with two inputs:
+"""
+Instead of using RunnableLambda, now we are going to use a lambda function and we will invoke the chain with two inputs:
+"""
 
 chain = RunnableParallel(
     {
@@ -1991,7 +1994,9 @@ response = chain.invoke({
     "name": "Abram"
 })
 
-# - See how the lambda function is taking the "name" input.
+"""
+- See how the lambda function is taking the "name" input.
+"""
 
 print("\n----------\n")
 
@@ -2002,8 +2007,10 @@ print("\n----------\n")
 
 print("\n----------\n")
 
-# We can add more Runnables to the chain
-# - In the following example, the prompt Runnable will take the output of the RunnableParallel:
+"""
+We can add more Runnables to the chain
+- In the following example, the prompt Runnable will take the output of the RunnableParallel:
+"""
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -2028,7 +2035,9 @@ response = chain.invoke({
     "name": "Abram"
 })
 
-# As you saw, the prompt Runnable took "Abramovich", the output of the RunnableParallel, as the value for the "soccer_player" variable.
+"""
+As you saw, the prompt Runnable took "Abramovich", the output of the RunnableParallel, as the value for the "soccer_player" variable.
+"""
 
 print("\n----------\n")
 
@@ -2070,11 +2079,13 @@ retrieval_chain = (
 
 response = retrieval_chain.invoke("who are the Alumni of AI Accelera?")
 
-# Important: the syntax of RunnableParallel can have several variations.
-# - When composing a RunnableParallel with another Runnable you do not need to wrap it up in the RunnableParallel class. Inside a chain, the next three # syntaxs are equivalent:
-#   - RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
-#   - RunnableParallel(context=retriever, question=RunnablePassthrough())
-#   - {"context": retriever, "question": RunnablePassthrough()}
+"""
+Important: the syntax of RunnableParallel can have several variations.
+- When composing a RunnableParallel with another Runnable you do not need to wrap it up in the RunnableParallel class. Inside a chain, the next three syntaxs are equivalent:
+  - RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
+  - RunnableParallel(context=retriever, question=RunnablePassthrough())
+  - {"context": retriever, "question": RunnablePassthrough()}
+"""
 
 print("\n----------\n")
 
@@ -2085,8 +2096,10 @@ print("\n----------\n")
 
 print("\n----------\n")
 
-# Using itemgetter with RunnableParallel
-# - When you are calling the LLM with several different input variables.
+"""
+Using itemgetter with RunnableParallel
+- When you are calling the LLM with several different input variables.
+"""
 
 from operator import itemgetter
 
