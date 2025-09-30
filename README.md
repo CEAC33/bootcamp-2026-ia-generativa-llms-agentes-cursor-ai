@@ -927,6 +927,7 @@ print("\n----------\n")
 
 print("\n----------\n")
 
+# Splitting with metadata
 metadatas = [{"chunk": 0}, {"chunk": 1}]
 
 documents = text_splitter.create_documents(
@@ -940,6 +941,427 @@ print("Using a second splitter to create chunks of text with metadata, print the
 
 print("\n----------\n")
 #print(documents[0])
+
+print("\n----------\n")
+```
+
+Recursive Character Splitter
+- This text splitter is the recommended one for generic text.
+- It is parameterized by a list of characters. It tries to split on them in order until the chunks are small enough. The default list is ["\n\n", "\n", " ", ""].
+- This has the effect of trying to keep all paragraphs (and then sentences, and then words) together as long as possible, as those would generically seem to be the strongest semantically related pieces of text.
+
+Simple Explanation:
+- The "Recursive Character Splitter" is a method used to divide text into smaller, more manageable chunks, designed specifically to maintain the semantic integrity of the text.
+- It operates by attempting to split the text using a list of characters in a specified order—beginning with the largest units like paragraphs, then moving to sentences, and finally to individual words if needed.
+- The default sequence for splitting is ["\n\n", "\n", " ", ""], which means it first tries to split the text at double newline characters to separate paragraphs, then at single newlines for any remaining large blocks, followed by spaces to isolate sentences or phrases, and finally using an empty string if finer splitting is necessary.
+- This method is particularly effective because it tries to keep text chunks as meaningful and complete as possible, ensuring that each chunk has a coherent piece of information.
+
+```python
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+recursive_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=26,
+    chunk_overlap=4
+)
+
+text1 = 'abcdefghijklmnopqrstuvwxyzabcdefg'
+
+text2 = """
+Data that Speak
+LLM Applications are revolutionizing industries such as 
+banking, healthcare, insurance, education, legal, tourism, 
+construction, logistics, marketing, sales, customer service, 
+and even public administration.
+
+The aim of our programs is for students to learn how to 
+create LLM Applications in the context of a business, 
+which presents a set of challenges that are important 
+to consider in advance.
+"""
+
+recursive_splitter.split_text(text1)
+
+recursive_splitter.split_text(text2)
+
+second_recursive_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=150,
+    chunk_overlap=0,
+    separators=["\n\n", "\n", "(?<=\. )", " ", ""]
+)
+
+second_recursive_splitter.split_text(text2)
+#['Data that Speak\nLLM Applications are revolutionizing industries such as \nbanking, healthcare, insurance, education, legal, tourism,',
+# 'construction, logistics, marketing, sales, customer service, \nand even public administration.',
+# 'The aim of our programs is for students to learn how to \ncreate LLM Applications in the context of a business,',
+# 'which presents a set of challenges that are important \nto consider in advance.']
+```
+
+### Embeddings: Transforma los fragmentos de texto en números (vectores)
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader("./data/be-good.txt")
+
+loaded_data = loader.load()
+
+print("\n----------\n")
+
+print("TXT file loaded:")
+
+print("\n----------\n")
+#print(loaded_data)
+
+print("\n----------\n")
+
+print("Content of the first page loaded:")
+
+print("\n----------\n")
+#print(loaded_data[0].page_content)
+
+print("\n----------\n")
+
+from langchain_text_splitters import CharacterTextSplitter
+
+text_splitter = CharacterTextSplitter(
+    separator="\n\n",
+    chunk_size=1000,
+    chunk_overlap=200,
+    length_function=len,
+    is_separator_regex=False,
+)
+
+texts = text_splitter.create_documents([loaded_data[0].page_content])
+
+print("\n----------\n")
+
+print("How many chunks of text were created by the splitter?")
+
+print("\n----------\n")
+#print(len(texts))
+
+print("\n----------\n")
+
+print("Print the first chunk of text")
+
+print("\n----------\n")
+#print(texts[0])
+
+print("\n----------\n")
+
+metadatas = [{"chunk": 0}, {"chunk": 1}]
+
+documents = text_splitter.create_documents(
+    [loaded_data[0].page_content, loaded_data[0].page_content], 
+    metadatas=metadatas
+)
+
+print("\n----------\n")
+
+print("Using a second splitter to create chunks of thext with metadata, print the first chunk of text with metadata")
+
+print("\n----------\n")
+#print(documents[0])
+
+print("\n----------\n")
+
+from langchain_openai import OpenAIEmbeddings
+
+# OpenAIEmbeddings is a lot of computational cost
+# Use OpenAIEmbeddings with documents that are too big can be really expensive
+# Do it with prudence, little by little and using LangSmith
+embeddings_model = OpenAIEmbeddings()
+
+chunks_of_text =     [
+        "Hi there!",
+        "Oh, hello!",
+        "What's your name?",
+        "My friends call me World",
+        "Hello World!"
+    ]
+
+# Converting texts into numbers
+embeddings = embeddings_model.embed_documents(chunks_of_text)
+
+print("\n----------\n")
+
+print("How many embeddings were created?")
+
+print("\n----------\n")
+#print(len(embeddings))
+
+print("\n----------\n")
+
+print("How long is the first embedding?")
+
+print("\n----------\n")
+#print(len(embeddings[0]))
+
+print("\n----------\n")
+
+print("Print the last 5 elements of the first embedding:")
+
+print("\n----------\n")
+#print(embeddings[0][:5])
+
+print("\n----------\n")
+
+# Converting the user question to numbers
+embedded_query = embeddings_model.embed_query("What was the name mentioned in the conversation?")
+```
+
+### Vector Databases (vector stores): Almacena y gestiona embeddings
+- https://python.langchain.com/v0.1/docs/integrations/vectorstores/
+- https://python.langchain.com/v0.1/docs/modules/data_connection/vectorstores/
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_chroma import Chroma
+
+# Load the document, split it into chunks, embed each chunk and load it into the vector store.
+loaded_document = TextLoader('./data/state_of_the_union.txt').load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+vector_db = Chroma.from_documents(chunks_of_text, OpenAIEmbeddings())
+
+question = "What did the president say about the John Lewis Voting Rights Act?"
+
+response = vector_db.similarity_search(question)
+
+print("\n----------\n")
+
+print("Ask the RAG App: What did the president say about the John Lewis Voting Rights Act?")
+
+print("\n----------\n")
+print(response[0].page_content)
+
+print("\n----------\n")
+```
+
+### Retrievers: Encuentra los embeddings que mejor responden a la pregunta
+
+Retriever: es como un repartidor
+
+**Vector Stores vs. Retrievers**
+
+1. Purpose and Functionality:
+
+- Vector Stores: These are specialized databases designed to store information in the form of vectors (high-dimensional data points that represent text or other information). Vector stores are primarily used for quickly searching and retrieving similar vectors based on a query vector. They are focused on efficiently handling similarity comparisons between the stored vectors and any query vector.
+- Retrievers: Retrievers are more general tools that use various methods, including vector stores, to find and return relevant documents or information in response to a query. A retriever doesn't necessarily store the information itself but knows how to access and retrieve it when needed.
+
+2. Storage vs. Retrieval:
+
+- Vector Stores: As the name implies, these are primarily concerned with storing data in a structured way that makes it fast and efficient to perform similarity searches.
+- Retrievers: While they may utilize storage systems like vector stores, retrievers are more focused on the act of fetching the right information in response to a user's query. Their main job is to provide the end-user with the most relevant information or documents based on the input they receive.
+
+3. Flexibility:
+
+- Vector Stores: These are somewhat limited in their scope to handling tasks that involve similarity searches within the stored vectors. They are a specific tool for specific types of data retrieval tasks.
+- Retrievers: They can be designed to use different back-end systems (like vector stores or other databases) and can be part of larger systems that may involve more complex data processing or response generation.
+In summary, vector stores in LangChain are about how information is stored and efficiently accessed based on similarity, while retrievers are about using various methods (including vector stores) to actively fetch and return the right information in response to diverse queries.
+
+**Differences .similarity_search vs. .as_retriever()**
+
+Both methods involve finding the most relevant text based on a query, but they are structured differently and may offer different functionalities based on their implementation.
+
+**.similarity_search**
+
+This method directly performs a similarity search against a vector database, which in your first code snippet is managed by the Chroma class. The process includes:
+
+- Embedding the input query using the same model that was used to embed the document chunks.
+- Searching the vector database for the closest vectors to the query's embedding.
+- Returning the most relevant chunks based on their semantic similarity to the query.
+  
+This method is straightforward and typically used when you need to quickly find and retrieve the text segments that best match the query.
+
+**.as_retriever()**
+
+This method involves a different approach:
+
+1. Retriever Setup: In the second code snippet, **vector_db.as_retriever()** converts the vector database (managed by FAISS in this case) into a retriever object. This object abstracts the similarity search into a retriever model that can be used in more complex retrieval-augmented generation (RAG) tasks.
+2. Invoke Method: The **invoke()** function on the retriever is then used to perform the query. This method can be part of a larger system where the retriever is integrated with other components (like a language model) to generate answers or further process the retrieved documents.
+   
+**Key Differences**
+
+- **Flexibility:** **.as_retriever()** provides a more flexible interface that can be integrated into larger, more complex systems, potentially combining retrieval with generation (like in RAG setups). This method is beneficial in applications where the retrieved content might be used as input for further processing or answer generation.
+- **Backend Implementation:** While **.similarity_search** directly accesses the vector database, **.as_retriever()** encapsulates this access within a retriever object, which might have additional functionalities or optimizations for specific retrieval tasks.
+- **Use Cases:** The direct **.similarity_search** might be faster and more straightforward for simple query-to-document retrieval tasks. In contrast, **.as_retriever()** could be used in scenarios requiring additional steps after retrieval, like feeding the retrieved information into a language model for generating coherent and context-aware responses.
+Both methods are useful, but their appropriateness depends on the specific requirements of your application, such as whether you need straightforward retrieval or a more complex retrieval-augmented generation process.
+
+LCEL = LangChain Expression Language, LangChain de 2da Generación
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_chroma import Chroma
+
+# Load the document, split it into chunks, embed each chunk and load it into the vector store.
+loaded_document = TextLoader('./data/state_of_the_union.txt').load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+vector_db = Chroma.from_documents(chunks_of_text, OpenAIEmbeddings())
+
+question = "What did the president say about the John Lewis Voting Rights Act?"
+
+response = vector_db.similarity_search(question)
+
+print("\n----------\n")
+
+print("Ask the RAG App: What did the president say about the John Lewis Voting Rights Act?")
+
+print("\n----------\n")
+#print(response[0].page_content)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader("./data/state_of_the_union.txt")
+
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+
+loaded_document = loader.load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+embeddings = OpenAIEmbeddings()
+
+vector_db = FAISS.from_documents(chunks_of_text, embeddings)
+
+retriever = vector_db.as_retriever()
+
+response = retriever.invoke("what did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+
+print("Ask the RAG App with Retriever: What did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+print(response[0].page_content)
+
+print("\n----------\n")
+```
+
+### Top K: decide cuántos resultados se utilizarán para responder a la pregunta
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatModel = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_community.document_loaders import TextLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+from langchain_chroma import Chroma
+
+# Load the document, split it into chunks, embed each chunk and load it into the vector store.
+loaded_document = TextLoader('./data/state_of_the_union.txt').load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+vector_db = Chroma.from_documents(chunks_of_text, OpenAIEmbeddings())
+
+question = "What did the president say about the John Lewis Voting Rights Act?"
+
+response = vector_db.similarity_search(question)
+
+print("\n----------\n")
+
+print("Ask the RAG App: What did the president say about the John Lewis Voting Rights Act?")
+
+print("\n----------\n")
+#print(response[0].page_content)
+
+print("\n----------\n")
+
+from langchain_community.document_loaders import TextLoader
+
+loader = TextLoader("./data/state_of_the_union.txt")
+
+from langchain_community.vectorstores import FAISS
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import CharacterTextSplitter
+
+loaded_document = loader.load()
+
+text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+
+chunks_of_text = text_splitter.split_documents(loaded_document)
+
+embeddings = OpenAIEmbeddings()
+
+vector_db = FAISS.from_documents(chunks_of_text, embeddings)
+
+retriever = vector_db.as_retriever()
+
+response = retriever.invoke("what did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+
+print("Ask the RAG App with Retriever: What did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+#print(response[0].page_content)
+
+print("\n----------\n")
+
+retriever = vector_db.as_retriever(search_kwargs={"k": 1})
+
+response = retriever.invoke("what did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+
+print("Ask the RAG App with top k=1: What did he say about ketanji brown jackson?")
+
+print("\n----------\n")
+print(response[0].page_content)
 
 print("\n----------\n")
 ```
