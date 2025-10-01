@@ -3867,3 +3867,72 @@ if __name__ == "__main__":
     * [http://127.0.0.1:8000/chain](http://127.0.0.1:8000/chain)
 * FastAPI API documentation: [http://127.0.0.1:8000/docs#/](http://127.0.0.1:8000/docs#/)
 
+### Templates LangChain
+
+Install LangChain Client in the terminal
+```
+#install -U "langchain-cli[serve]"
+```
+
+Create a new LangChain app from the terminal with the rag-conversation template
+```
+#langchain app new my_app --package rag-conversation
+```
+
+This will create a my_app folder with the following**
+* app folder
+    * server.py: this has langserve preinstalled 
+* packages folder
+    * rag-conversation
+        * rag-conversation
+        * test 
+* pyproject.toml
+* readme.md
+
+When you confirm in the teminal to run the installation, you will be presented with a piece of code you need to add to the server.py file. This seems to be a temporary way of doing things.
+
+cd to the my_app folder and run: langchain serve
+
+Demo video from LangChain: https://www.youtube.com/watch?v=o7C9ld6Ln-M
+
+### El Chatbot de la Documentación de LangChain
+
+- https://chat.langchain.com/
+- No es muy preciso, pero puede ser de ayuda en algunas ocasiones
+
+### Novedades en el Ecosistema LangChain con LangChain v030
+
+- From LangServe to LGraph Cloud
+- LChain Support Chat revamped
+- LGraph Studio
+- From LChain to LGraph templates
+- New Pricing
+
+LServe to LGraph Cloud
+- LangServe is deprecated
+- LangGraph Cloud es la nueva plataforma de LChain para deploy and host LChain projects. No es la única opción, ni siempre la mejor
+
+LChain Chat Revamped
+- For LangChain Python docs and API
+- LangGraph running under the hood
+- Latest LLM Models: gpt4o-mini, etc.
+- Users can now view and continue previous chats
+
+LGraph Studio
+- Desktop IDE for visualizing, interacting with, and debugging complex agentic applications
+- Ahora mismo, en beta y sólo para Mac OS
+
+From LC to LG Templates
+- With LGraph Studio or as Github repos
+- Initial templates
+  - RAG Chatbot
+  - ReAct Agent
+  - Data Enrichment Agent
+ 
+New pricing
+- LChain free
+- LGraph free
+- LSmith free tier and paid
+- LGraph Cloud in free beta by now
+
+## Aplicaciones LangChain de Nivel 1: The Top 10 LangChain Apps
