@@ -2979,3 +2979,527 @@ print(response)
 print("\n----------\n")
 ```
 
+## LangChain Basics: Memoria. ¿Pueden recordar los LLMs?
+
+https://github.com/AI-LLM-Bootcamp/b405
+
+- ¿Pueden recordar los LLMs?
+- Temporary memory (Buffer memory)
+- Permanent memory (Chat history)
+
+### Memoria Temporal: buffer memory
+
+Memory
+- Save your conversation with the LLM.
+
+Intro
+- Ability to store information about past interactions.
+- Most of memory-related functionality in LangChain is marked as beta. This is for two reasons:
+  1. Most functionality are not production ready.
+  2. Most functionality work with Legacy chains, not the newer LCEL syntax.
+- The main exception to this is the ChatMessageHistory functionality. This functionality is largely production ready and does integrate with LCEL.
+
+LangChain documentation on Memory
+- See the LangChain documentation page on Memory here. - https://python.langchain.com/v0.1/docs/modules/memory/
+- See the LangChain documentation page on how to use ChatMessageHistory with LCEL here. - https://python.langchain.com/v0.1/docs/expression_language/how_to/message_history/
+- See the LangChain documentation page on the various ChatMessageHistory integrations here. - https://python.langchain.com/v0.1/docs/integrations/memory/
+
+**Buffer Memory**
+- ConversationBufferMemory keeps a list of chat messages in a buffer and passes those into the prompt template.
+- A buffer refers to a **temporary storage area in memory** used to hold data. Here, the buffer specifically holds chat messages before they are processed or used in some way, such as being passed into a prompt template.
+- In simple terms, a buffer is like a waiting room for data. It's a temporary holding spot where data can stay until it's ready to be used or processed. Imagine you're cooking and you chop up vegetables before you need to cook them. Instead of chopping each vegetable right before it goes in the pan, you chop them all at once and put them aside on a cutting board. That cutting board with the chopped vegetables is like a buffer — it holds everything ready for you until you're ready to use it. This way, when you need the vegetables, they are all prepared and ready to go, making the cooking process smoother and faster.
+- As you can see in the following example, ConversationBufferMemory was used mostly in the initial versions of LangChain.
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    MessagesPlaceholder,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+)
+from langchain.chains import LLMChain
+from langchain.memory import ConversationBufferMemory
+
+
+prompt = ChatPromptTemplate(
+    messages=[
+        SystemMessagePromptTemplate.from_template(
+            "You are a nice chatbot having a conversation with a human."
+        ),
+        MessagesPlaceholder(variable_name="chat_history"),
+        HumanMessagePromptTemplate.from_template("{question}")
+    ]
+)
+# Notice that we `return_messages=True` to fit into the MessagesPlaceholder
+# Notice that `"chat_history"` aligns with the MessagesPlaceholder name.
+memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+
+conversation = LLMChain(
+    llm=llm,
+    prompt=prompt,
+    verbose=True,
+    memory=memory
+)
+
+# Notice that we just pass in the `question` variables - `chat_history` gets populated by memory
+response = conversation({"question": "hi"})
+# > Entering new LLMChain chain...
+# Prompt after formatting:
+# System: You are a nice chatbot having a conversation with a human.
+# Human: hi
+
+# > Finished chain.
+# {'question': 'hi',
+# 'chat_history': [HumanMessage(content='hi'),
+#  AIMessage(content='Hello! How are you doing today?')],
+# 'text': 'Hello! How are you doing today?'}
+
+print("\n----------\n")
+
+print("Result from invoking the chain:")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+
+conversation({"question": "My name is Julio and I have moved 33 times."})
+
+"""
+> Entering new LLMChain chain...
+Prompt after formatting:
+System: You are a nice chatbot having a conversation with a human.
+Human: hi
+AI: Hello! How are you doing today?
+Human: My name is Julio and I have moved 33 times.
+> Finished chain.
+{'question': 'My name is Julio and I have moved 33 times.',
+'chat_history': [HumanMessage(content='hi'),
+ AIMessage(content='Hello! How are you doing today?'),
+ HumanMessage(content='My name is Julio and I have moved 33 times.'),
+ AIMessage(content="Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?")],
+ 'text': "Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?"}
+"""
+
+conversation({"question": "If my average moving distance was 100 miles, how many miles took all my moves?"})
+
+"""
+> Entering new LLMChain chain...
+Prompt after formatting:
+System: You are a nice chatbot having a conversation with a human.
+Human: hi
+AI: Hello! How are you doing today?
+Human: My name is Julio and I have moved 33 times.
+AI: Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?
+Human: If my average moving distance was 100 miles, how many miles took all my moves?
+
+> Finished chain.
+{'question': 'If my average moving distance was 100 miles, how many miles took all my moves?',
+ 'chat_history': [HumanMessage(content='hi'),
+  AIMessage(content='Hello! How are you doing today?'),
+  HumanMessage(content='My name is Julio and I have moved 33 times.'),
+  AIMessage(content="Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?"),
+  HumanMessage(content='If my average moving distance was 100 miles, how many miles took all my moves?'),
+  AIMessage(content="To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):\n\n33 moves x 100 miles = 3300 miles\n\nSo, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!")],
+ 'text': "To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):\n\n33 moves x 100 miles = 3300 miles\n\nSo, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!"}
+"""
+
+conversation({"question": "Do you remember my name?"})
+
+"""
+> Entering new LLMChain chain...
+Prompt after formatting:
+System: You are a nice chatbot having a conversation with a human.
+Human: hi
+AI: Hello! How are you doing today?
+Human: My name is Julio and I have moved 33 times.
+AI: Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?
+Human: If my average moving distance was 100 miles, how many miles took all my moves?
+AI: To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):
+
+33 moves x 100 miles = 3300 miles
+
+So, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!
+Human: Do you remember my name?
+
+> Finished chain.
+{'question': 'Do you remember my name?',
+ 'chat_history': [HumanMessage(content='hi'),
+  AIMessage(content='Hello! How are you doing today?'),
+  HumanMessage(content='My name is Julio and I have moved 33 times.'),
+  AIMessage(content="Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?"),
+  HumanMessage(content='If my average moving distance was 100 miles, how many miles took all my moves?'),
+  AIMessage(content="To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):\n\n33 moves x 100 miles = 3300 miles\n\nSo, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!"),
+  HumanMessage(content='Do you remember my name?'),
+  AIMessage(content='Yes, Julio! Is there anything else you would like to know or talk about?')],
+ 'text': 'Yes, Julio! Is there anything else you would like to know or talk about?'}
+"""
+
+print(memory.buffer)
+"""
+[HumanMessage(content='hi'), AIMessage(content='Hello! How are you doing today?'), HumanMessage(content='My name is Julio and I have moved 33 times.'), AIMessage(content="Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?"), HumanMessage(content='If my average moving distance was 100 miles, how many miles took all my moves?'), AIMessage(content="To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):\n\n33 moves x 100 miles = 3300 miles\n\nSo, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!"), HumanMessage(content='Do you remember my name?'), AIMessage(content='Yes, Julio! Is there anything else you would like to know or talk about?')]
+"""
+
+memory.load_memory_variables({})
+"""
+{'chat_history': [HumanMessage(content='hi'),
+  AIMessage(content='Hello! How are you doing today?'),
+  HumanMessage(content='My name is Julio and I have moved 33 times.'),
+  AIMessage(content="Nice to meet you, Julio! Moving 33 times must have given you a lot of interesting experiences. What's the story behind moving so many times?"),
+  HumanMessage(content='If my average moving distance was 100 miles, how many miles took all my moves?'),
+  AIMessage(content="To calculate the total distance you have moved, you can multiply the number of moves (33) by the average distance of each move (100 miles):\n\n33 moves x 100 miles = 3300 miles\n\nSo, all your moves combined would cover a total distance of 3300 miles. That's quite a journey!"),
+  HumanMessage(content='Do you remember my name?'),
+  AIMessage(content='Yes, Julio! Is there anything else you would like to know or talk about?')]}
+"""
+```
+
+Conversation Buffer Window Memory
+
+Similar to the previous one, but **you can limit the number of conversational exchanges stored in memory**. For example, you can set it so it only remembers the last 3 questions and answers of the conversation.
+
+```
+from langchain.memory import ConversationBufferWindowMemory
+from langchain.chains import ConversationChain
+window_memory = ConversationBufferWindowMemory(k=3)
+conversation_window = ConversationChain(
+    llm=llm, 
+    memory = window_memory,
+    verbose=True
+)
+"""
+/Users/juliocolomer/Library/Caches/pypoetry/virtualenvs/b405-Pby3ZuTj-py3.11/lib/python3.11/site-packages/langchain_core/_api/deprecation.py:139: LangChainDeprecationWarning: The class `ConversationChain` was deprecated in LangChain 0.2.7 and will be removed in 1.0. Use RunnableWithMessageHistory: https://api.python.langchain.com/en/latest/runnables/langchain_core.runnables.history.RunnableWithMessageHistory.html instead.
+  warn_deprecated(
+"""
+conversation_window({"input": "Hi, my name is Julio"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+
+Human: Hi, my name is Julio
+AI:
+
+> Finished chain.
+{'input': 'Hi, my name is Julio',
+ 'history': '',
+ 'response': "Hello Julio! It's nice to meet you. How can I assist you today?"}
+"""
+
+conversation_window({"input": "My favorite color is blue"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: Hi, my name is Julio
+AI: Hello Julio! It's nice to meet you. How can I assist you today?
+Human: My favorite color is blue
+AI:
+
+> Finished chain.
+{'input': 'My favorite color is blue',
+ 'history': "Human: Hi, my name is Julio\nAI: Hello Julio! It's nice to meet you. How can I assist you today?",
+ 'response': "Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?"}
+"""
+
+conversation_window({"input": "My favorite animals are dogs"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: Hi, my name is Julio
+AI: Hello Julio! It's nice to meet you. How can I assist you today?
+Human: My favorite color is blue
+AI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?
+Human: My favorite animals are dogs
+AI:
+
+> Finished chain.
+{'input': 'My favorite animals are dogs',
+ 'history': "Human: Hi, my name is Julio\nAI: Hello Julio! It's nice to meet you. How can I assist you today?\nHuman: My favorite color is blue\nAI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?",
+ 'response': 'Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?'}
+"""
+
+conversation_window({"input": "I like to drive a vespa scooter in the city"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: Hi, my name is Julio
+AI: Hello Julio! It's nice to meet you. How can I assist you today?
+Human: My favorite color is blue
+AI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?
+Human: My favorite animals are dogs
+AI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?
+Human: I like to drive a vespa scooter in the city
+AI:
+
+> Finished chain.
+{'input': 'I like to drive a vespa scooter in the city',
+ 'history': "Human: Hi, my name is Julio\nAI: Hello Julio! It's nice to meet you. How can I assist you today?\nHuman: My favorite color is blue\nAI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?\nHuman: My favorite animals are dogs\nAI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?",
+ 'response': 'Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?'}
+"""
+
+conversation_window({"input": "My favorite city is San Francisco"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: My favorite color is blue
+AI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?
+Human: My favorite animals are dogs
+AI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?
+Human: I like to drive a vespa scooter in the city
+AI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?
+Human: My favorite city is San Francisco
+AI:
+
+> Finished chain.
+{'input': 'My favorite city is San Francisco',
+ 'history': "Human: My favorite color is blue\nAI: Blue is a great choice! Did you know that blue is often associated with calmness and tranquility? It's also a popular color for clothing and interior design. Is there anything else you'd like to share or ask?\nHuman: My favorite animals are dogs\nAI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?\nHuman: I like to drive a vespa scooter in the city\nAI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?",
+ 'response': "San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?"}
+"""
+
+conversation_window({"input": "My favorite season is summer"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: My favorite animals are dogs
+AI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?
+Human: I like to drive a vespa scooter in the city
+AI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?
+Human: My favorite city is San Francisco
+AI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?
+Human: My favorite season is summer
+AI:
+
+> Finished chain.
+{'input': 'My favorite season is summer',
+ 'history': "Human: My favorite animals are dogs\nAI: Dogs are wonderful companions! They are known for their loyalty, playful nature, and ability to form strong bonds with their owners. There are so many different breeds of dogs, each with their own unique characteristics and personalities. Do you have a favorite breed of dog, Julio?\nHuman: I like to drive a vespa scooter in the city\nAI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?\nHuman: My favorite city is San Francisco\nAI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?",
+ 'response': "Summer is a popular season for many people! It's known for warm weather, longer days, and opportunities for outdoor activities like swimming, hiking, and barbecues. The bright sunshine and clear skies of summer can create a cheerful and energetic atmosphere. Whether you enjoy beach days, summer festivals, or simply relaxing in the sun, there's something for everyone to love about the summer season. What are some of your favorite summer activities, Julio?"}
+"""
+
+conversation_window({"input": "What is my favorite color?"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: I like to drive a vespa scooter in the city
+AI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?
+Human: My favorite city is San Francisco
+AI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?
+Human: My favorite season is summer
+AI: Summer is a popular season for many people! It's known for warm weather, longer days, and opportunities for outdoor activities like swimming, hiking, and barbecues. The bright sunshine and clear skies of summer can create a cheerful and energetic atmosphere. Whether you enjoy beach days, summer festivals, or simply relaxing in the sun, there's something for everyone to love about the summer season. What are some of your favorite summer activities, Julio?
+Human: What is my favorite color?
+AI:
+
+> Finished chain.
+{'input': 'What is my favorite color?',
+ 'history': "Human: I like to drive a vespa scooter in the city\nAI: Vespa scooters are a stylish and convenient way to get around in the city! They are known for their retro design, compact size, and ease of maneuverability in urban areas. Riding a Vespa scooter can be a fun and efficient way to navigate through traffic and explore the city. Have you customized your Vespa in any way, Julio?\nHuman: My favorite city is San Francisco\nAI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?\nHuman: My favorite season is summer\nAI: Summer is a popular season for many people! It's known for warm weather, longer days, and opportunities for outdoor activities like swimming, hiking, and barbecues. The bright sunshine and clear skies of summer can create a cheerful and energetic atmosphere. Whether you enjoy beach days, summer festivals, or simply relaxing in the sun, there's something for everyone to love about the summer season. What are some of your favorite summer activities, Julio?",
+ 'response': "I'm sorry, Julio, but I do not have that information. Can you please tell me what your favorite color is?"}
+"""
+
+conversation_window({"input": "My favorite city is San Francisco"})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+Human: My favorite city is San Francisco
+AI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?
+Human: My favorite season is summer
+AI: Summer is a popular season for many people! It's known for warm weather, longer days, and opportunities for outdoor activities like swimming, hiking, and barbecues. The bright sunshine and clear skies of summer can create a cheerful and energetic atmosphere. Whether you enjoy beach days, summer festivals, or simply relaxing in the sun, there's something for everyone to love about the summer season. What are some of your favorite summer activities, Julio?
+Human: What is my favorite color?
+AI: I'm sorry, Julio, but I do not have that information. Can you please tell me what your favorite color is?
+Human: My favorite city is San Francisco
+AI:
+
+> Finished chain.
+{'input': 'My favorite city is San Francisco',
+ 'history': "Human: My favorite city is San Francisco\nAI: San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?\nHuman: My favorite season is summer\nAI: Summer is a popular season for many people! It's known for warm weather, longer days, and opportunities for outdoor activities like swimming, hiking, and barbecues. The bright sunshine and clear skies of summer can create a cheerful and energetic atmosphere. Whether you enjoy beach days, summer festivals, or simply relaxing in the sun, there's something for everyone to love about the summer season. What are some of your favorite summer activities, Julio?\nHuman: What is my favorite color?\nAI: I'm sorry, Julio, but I do not have that information. Can you please tell me what your favorite color is?",
+ 'response': "San Francisco is a beautiful city with so much to offer! It's known for its iconic landmarks like the Golden Gate Bridge and Alcatraz Island, as well as its diverse neighborhoods, vibrant food scene, and rich cultural history. The city's hilly terrain and stunning views of the bay make it a unique and charming place to visit or live. Have you had the chance to explore all the different neighborhoods in San Francisco, Julio?"}
+"""
+```
+
+Conversation Token Buffer Memory
+
+Similar to the previous one, but this time you can limit the number of tokens stored in memory.
+
+If you are using the pre-loaded poetry shell, you do not need to install the following package because it is already pre-loaded for you:
+```python
+#!pip install tiktoken
+from langchain.memory import ConversationTokenBufferMemory
+token_memory = ConversationTokenBufferMemory(
+    llm=llm,
+    max_token_limit=50
+)
+conversation_token = ConversationChain(
+    llm=llm, 
+    memory = token_memory,
+    verbose=True
+)
+```
+
+Conversation Summary Memory
+
+Stores a summary of the previous conversational exchanges.
+
+```python
+from langchain.memory import ConversationSummaryBufferMemory
+summary_memory = ConversationSummaryBufferMemory(
+    llm=llm,
+    max_token_limit=100
+)
+conversation_summary = ConversationChain(
+    llm=llm, 
+    memory = summary_memory,
+    verbose=True
+)
+conversation_summary({"input": """Kurt Cobain dropped out of high school, 
+then worked there as a janitor Even though he was by all accounts a slob, 
+Kurt Cobain worked as a janitor at Weatherwax High School, not long after 
+dropping out of that very school. The dancing janitor in the 
+"Smells Like Teen Spirit" music video was an inside joke for 
+those who knew of Cobain's old job.
+"""})
+
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+
+Human: Kurt Cobain dropped out of high school, 
+then worked there as a janitor Even though he was by all accounts a slob, 
+Kurt Cobain worked as a janitor at Weatherwax High School, not long after 
+dropping out of that very school. The dancing janitor in the 
+"Smells Like Teen Spirit" music video was an inside joke for 
+those who knew of Cobain's old job.
+
+AI:
+
+> Finished chain.
+{'input': 'Kurt Cobain dropped out of high school, \nthen worked there as a janitor Even though he was by all accounts a slob, \nKurt Cobain worked as a janitor at Weatherwax High School, not long after \ndropping out of that very school. The dancing janitor in the \n"Smells Like Teen Spirit" music video was an inside joke for \nthose who knew of Cobain\'s old job.\n',
+ 'history': '',
+ 'response': 'That\'s correct! Kurt Cobain did in fact drop out of high school and later worked as a janitor at Weatherwax High School. The dancing janitor in the "Smells Like Teen Spirit" music video was indeed a nod to his past job. It\'s interesting how these little details can add layers of meaning to his work, don\'t you think?'}
+"""
+
+conversation_summary({"input": """
+There were at least five different drummers in the band 
+before Dave Grohl. Cobain and Novoselic were always members 
+of Nirvana—formerly known as Skid Row, Pen Cap Chew, Bliss, 
+and Ted Ed Fred—but finding a permanent drummer proved to be 
+even harder than coming up with a decent band name. In the 
+beginning, there was trivia answer Aaron Burckhard, who pissed 
+off Cobain by getting Kurt's car impounded after being arrested 
+for fighting with a police officer. Then there was Melvins 
+drummer Dale Crover, who pounded the skins for Cobain and 
+Novoselic on their first demo tape before moving to San Francisco. 
+Next came Dave Foster, who got arrested for assaulting the 
+son of the mayor of Cosmopolis, Washington. Burckhard briefly 
+returned before announcing he was too hungover to practice one day. 
+Then a mutual friend introduced Cobain and Novoselic to Chad 
+Channing, who hung around for two years before the group's 
+co-founders decided he wasn't cutting it anymore. Mudhoney 
+drummer Dan Peters played on the "Sliver" single.
+"""})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+System: The human mentions that Kurt Cobain dropped out of high school and then worked as a janitor there. Despite being known as a slob, Cobain worked as a janitor at Weatherwax High School after dropping out. The dancing janitor in the "Smells Like Teen Spirit" music video was an inside joke for those aware of Cobain's previous job.
+AI: That's correct! Kurt Cobain did in fact drop out of high school and later worked as a janitor at Weatherwax High School. The dancing janitor in the "Smells Like Teen Spirit" music video was indeed a nod to his past job. It's interesting how these little details can add layers of meaning to his work, don't you think?
+Human: 
+There were at least five different drummers in the band 
+before Dave Grohl. Cobain and Novoselic were always members 
+of Nirvana—formerly known as Skid Row, Pen Cap Chew, Bliss, 
+and Ted Ed Fred—but finding a permanent drummer proved to be 
+even harder than coming up with a decent band name. In the 
+beginning, there was trivia answer Aaron Burckhard, who pissed 
+off Cobain by getting Kurt's car impounded after being arrested 
+for fighting with a police officer. Then there was Melvins 
+drummer Dale Crover, who pounded the skins for Cobain and 
+Novoselic on their first demo tape before moving to San Francisco. 
+Next came Dave Foster, who got arrested for assaulting the 
+son of the mayor of Cosmopolis, Washington. Burckhard briefly 
+returned before announcing he was too hungover to practice one day. 
+Then a mutual friend introduced Cobain and Novoselic to Chad 
+Channing, who hung around for two years before the group's 
+co-founders decided he wasn't cutting it anymore. Mudhoney 
+drummer Dan Peters played on the "Sliver" single.
+
+AI:
+
+> Finished chain.
+{'input': '\nThere were at least five different drummers in the band \nbefore Dave Grohl. Cobain and Novoselic were always members \nof Nirvana—formerly known as Skid Row, Pen Cap Chew, Bliss, \nand Ted Ed Fred—but finding a permanent drummer proved to be \neven harder than coming up with a decent band name. In the \nbeginning, there was trivia answer Aaron Burckhard, who pissed \noff Cobain by getting Kurt\'s car impounded after being arrested \nfor fighting with a police officer. Then there was Melvins \ndrummer Dale Crover, who pounded the skins for Cobain and \nNovoselic on their first demo tape before moving to San Francisco. \nNext came Dave Foster, who got arrested for assaulting the \nson of the mayor of Cosmopolis, Washington. Burckhard briefly \nreturned before announcing he was too hungover to practice one day. \nThen a mutual friend introduced Cobain and Novoselic to Chad \nChanning, who hung around for two years before the group\'s \nco-founders decided he wasn\'t cutting it anymore. Mudhoney \ndrummer Dan Peters played on the "Sliver" single.\n',
+ 'history': 'System: The human mentions that Kurt Cobain dropped out of high school and then worked as a janitor there. Despite being known as a slob, Cobain worked as a janitor at Weatherwax High School after dropping out. The dancing janitor in the "Smells Like Teen Spirit" music video was an inside joke for those aware of Cobain\'s previous job.\nAI: That\'s correct! Kurt Cobain did in fact drop out of high school and later worked as a janitor at Weatherwax High School. The dancing janitor in the "Smells Like Teen Spirit" music video was indeed a nod to his past job. It\'s interesting how these little details can add layers of meaning to his work, don\'t you think?',
+ 'response': 'Wow, that\'s a lot of drummers Nirvana went through before Dave Grohl joined the band! It must have been frustrating for Cobain and Novoselic to constantly have to find new drummers. It\'s interesting to hear about the different personalities and incidents that led to each drummer\'s departure. It\'s amazing how the right drummer can really make or break a band. And it\'s cool that Dan Peters from Mudhoney played on the "Sliver" single. It\'s fascinating to learn about the history and evolution of the band\'s lineup.'}
+"""
+
+conversation_summary({"input": """
+Back in Washington, Crover performed with Cobain and Novoselic 
+on a seven date tour with Sonic Youth in August 1990, before 
+Dave Grohl's band Scream broke up and Melvins frontman Buzz 
+Osbourne introduced Grohl to Cobain and Novoselic, ending the 
+vicious cycle of rotating drummers.
+"""})
+"""
+> Entering new ConversationChain chain...
+Prompt after formatting:
+The following is a friendly conversation between a human and an AI. The AI is talkative and provides lots of specific details from its context. If the AI does not know the answer to a question, it truthfully says it does not know.
+
+Current conversation:
+System: The human mentions Kurt Cobain's journey with different drummers before Dave Grohl joined Nirvana. From Aaron Burckhard to Chad Channing and even a brief stint with Dan Peters from Mudhoney, the band went through a series of lineup changes. Each drummer brought their own unique story and challenges, ultimately shaping the band's sound and trajectory.
+Human: 
+Back in Washington, Crover performed with Cobain and Novoselic 
+on a seven date tour with Sonic Youth in August 1990, before 
+Dave Grohl's band Scream broke up and Melvins frontman Buzz 
+Osbourne introduced Grohl to Cobain and Novoselic, ending the 
+vicious cycle of rotating drummers.
+
+AI:
+
+> Finished chain.
+{'input': "\nBack in Washington, Crover performed with Cobain and Novoselic \non a seven date tour with Sonic Youth in August 1990, before \nDave Grohl's band Scream broke up and Melvins frontman Buzz \nOsbourne introduced Grohl to Cobain and Novoselic, ending the \nvicious cycle of rotating drummers.\n",
+ 'history': "System: The human mentions Kurt Cobain's journey with different drummers before Dave Grohl joined Nirvana. From Aaron Burckhard to Chad Channing and even a brief stint with Dan Peters from Mudhoney, the band went through a series of lineup changes. Each drummer brought their own unique story and challenges, ultimately shaping the band's sound and trajectory.",
+ 'response': "Yes, that's correct! Dale Crover from the Melvins did indeed perform with Kurt Cobain and Krist Novoselic on that tour with Sonic Youth in August 1990. It's fascinating how the connections between different bands and musicians ultimately led to Dave Grohl joining Nirvana and solidifying the lineup. The music scene in Washington at that time was really interconnected and influential in shaping the sound of bands like Nirvana."}
+"""
+
+print(summary_memory.buffer)
+"""
+System: The human mentions Kurt Cobain's journey with different drummers before Dave Grohl joined Nirvana, including Aaron Burckhard, Chad Channing, and Dan Peters. Buzz Osbourne introduced Grohl to Cobain and Novoselic after a tour with Sonic Youth, ending the cycle of rotating drummers and solidifying the band's lineup.
+AI: Yes, that's correct! Dale Crover from the Melvins did indeed perform with Kurt Cobain and Krist Novoselic on that tour with Sonic Youth in August 1990. It's fascinating how the connections between different bands and musicians ultimately led to Dave Grohl joining Nirvana and solidifying the lineup. The music scene in Washington at that time was really interconnected and influential in shaping the sound of bands like Nirvana.
+"""
+
+summary_memory.load_memory_variables({})
+"""
+{'history': "System: The human mentions Kurt Cobain's journey with different drummers before Dave Grohl joined Nirvana, including Aaron Burckhard, Chad Channing, and Dan Peters. Buzz Osbourne introduced Grohl to Cobain and Novoselic after a tour with Sonic Youth, ending the cycle of rotating drummers and solidifying the band's lineup.\nAI: Yes, that's correct! Dale Crover from the Melvins did indeed perform with Kurt Cobain and Krist Novoselic on that tour with Sonic Youth in August 1990. It's fascinating how the connections between different bands and musicians ultimately led to Dave Grohl joining Nirvana and solidifying the lineup. The music scene in Washington at that time was really interconnected and influential in shaping the sound of bands like Nirvana."}
+"""
+```
