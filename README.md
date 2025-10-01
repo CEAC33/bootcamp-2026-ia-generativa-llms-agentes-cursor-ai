@@ -3557,4 +3557,228 @@ print("\n----------\n")
 
 ## LangChain Basics: El ecosistema LangChain
 
+- Documentation
+- Development
+- Deployment
+- Monitoring
 
+### LangChain y LangSmith - Intro
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+# LangSmith
+# Log In at https://smith.langchain.com
+# LANGCHAIN_TRACING_V2=true
+# LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+# LANGCHAIN_API_KEY=<your-api-key>
+# LANGCHAIN_PROJECT=<your-project>  # if not specified, defaults to "default"
+
+#!pip install langsmith
+
+from langchain_openai import ChatOpenAI
+from langchain.callbacks.tracers import LangChainTracer
+
+llm = ChatOpenAI()
+tracer = LangChainTracer(project_name="Napoleon v1")
+llm.predict("How many brothers had Napoleon Bonaparte?", callbacks=[tracer])
+# 'Napoleon Bonaparte had three brothers: Joseph Bonaparte, Lucien Bonaparte, and Louis Bonaparte.'
+
+# Basic LangSmith Operations
+# Create a new project with LangChainTracer
+from langchain.callbacks.tracers import LangChainTracer
+
+tracer = LangChainTracer(project_name="Churchill v1")
+llm.predict("How old was Churchill when he was appointed PM?", callbacks=[tracer])
+# 'Winston Churchill was 65 years old when he was appointed as the Prime Minister of the United Kingdom. He assumed office on May 10, 1940.'
+
+# Alternative way to do the same
+from langchain.callbacks import tracing_v2_enabled
+
+with tracing_v2_enabled(project_name="Cyrus v1"):
+    llm.predict("When did Cyrus The Great reign in Persia?")
+
+# Creating Tags in LangSmith Projects
+from langchain.chains import LLMChain
+from langchain_openai import ChatOpenAI
+from langchain.prompts import PromptTemplate
+
+llm = ChatOpenAI(temperature=0, tags=["History"])
+
+prompt = PromptTemplate.from_template("Say {input}")
+
+chain = LLMChain(
+    llm=llm, 
+    prompt=prompt, 
+    tags=["Cyrus", "Persia"])
+
+chain("When did the first Cyrus king reign in Persia?", tags=["Cyrus"])
+# {'input': 'When did the first Cyrus king reign in Persia?',
+# 'text': 'The first Cyrus king, Cyrus the Great, reigned in Persia from 559 BC to 530 BC.'}
+
+# Creating Groups in LangSmith Projects
+from langchain.callbacks.manager import (
+    trace_as_chain_group
+)
+
+with trace_as_chain_group("American History v1") as group_manager:
+    pass
+
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+
+roman_llm = ChatOpenAI(temperature=0.9)
+
+prompt = PromptTemplate(
+    input_variables=["question"],
+    template="What is the answer to {question}?",
+)
+
+chain = LLMChain(
+    llm=roman_llm, 
+    prompt=prompt
+)
+
+with trace_as_chain_group("Roman History v1") as group_manager:
+    chain.run(question="Who did Julius Caesar marry?", callbacks=group_manager)
+    chain.run(question="Where did Julius Caesar fight?", callbacks=group_manager)
+    chain.run(question="What was the name of the horse of Julius Caesar?", callbacks=group_manager)
+
+# LangSmith Client
+from langsmith import Client
+
+client = Client()
+project_runs = client.list_runs(project_name="default")
+project_runs
+# <generator object Client.list_runs at 0x147102200>
+
+from datetime import datetime, timedelta
+
+todays_runs = client.list_runs(
+    project_name="default",
+    start_time=datetime.now() - timedelta(days=1),
+    run_type="llm",
+)
+todays_runs
+# <generator object Client.list_runs at 0x1466f9440>
+
+# for run in todays_runs:
+#     print(run)
+
+# todays_runs = client.list_runs(
+#     project_name="Churchill v1",
+#     start_time=datetime.now() - timedelta(days=1),
+#     run_type="llm",
+# )
+
+# for run in todays_runs:
+#     print(run)
+
+# Adding metadata to filter runs
+# One possible use of this: making A/B tests.
+
+chat_model = ChatOpenAI()
+chain = LLMChain.from_string(
+    llm=chat_model, 
+    template="What's the answer to {input}?")
+
+chain(
+    {"input": "Who was the companion of Don Quixote?"}, 
+    metadata={"source": "Cervantes"}
+)
+# {'input': 'Who was the companion of Don Quixote?',
+# 'text': 'The main companion of Don Quixote in the novel "Don Quixote" by Miguel de Cervantes is Sancho Panza.'}
+
+runs = list(client.list_runs(
+    project_name="default",
+    filter='has(metadata, \'{"source": "Cervantes"}\')',
+))
+
+#print(list(runs))
+
+# Evaluating your LLM App with a Test Dataset in LangSmith
+from langsmith import Client
+
+example_inputs = [
+  ("What is the largest mammal?", "The blue whale"),
+  ("What do mammals and birds have in common?", "They are both warm-blooded"),
+  ("What are reptiles known for?", "Having scales"),
+  ("What's the main characteristic of amphibians?", "They live both in water and on land"),
+]
+
+client = Client()
+
+dataset_name = "Elementary Animal Questions v1"
+
+# Storing inputs in a dataset lets us
+# run chains and LLMs over a shared set of examples.
+dataset = client.create_dataset(
+    dataset_name=dataset_name, 
+    description="Questions and answers about animal phylogenetics.",
+)
+
+for input_prompt, output_answer in example_inputs:
+    client.create_example(
+        inputs={"question": input_prompt},
+        outputs={"answer": output_answer},
+        dataset_id=dataset.id,
+    )
+
+from langsmith import Client
+from langchain.smith import RunEvalConfig, run_on_dataset
+
+evaluation_config = RunEvalConfig(
+    evaluators=[
+        "qa",
+        "context_qa",
+        "cot_qa",
+    ]
+)
+
+client = Client()
+llm = ChatOpenAI()
+run_on_dataset(
+    dataset_name=dataset_name,
+    llm_or_chain_factory=llm,
+    client=client,
+    evaluation=evaluation_config,
+    project_name="evalproject v1",
+)
+
+"""
+View the evaluation results for project 'evalproject v1' at:
+https://smith.langchain.com/o/ec6a7494-139b-5170-8044-143bc78622a9/projects/p/72b8d49b-782d-44dd-81be-6a6970762986?eval=true
+
+View all tests for Dataset Elementary Animal Questions v1 at:
+https://smith.langchain.com/datasets/fd0aa228-8310-4082-b949-776429b7eac3
+[------------------------------------------------->] 4/4
+{'project_name': 'evalproject v1',
+ 'results': {'303e45d0-2324-48ca-af44-bcf9884cdd32': {'output': 'The main characteristic of amphibians is their ability to live both in water and on land. They have a dual life cycle, starting as aquatic larvae (such as tadpoles) and then transforming into terrestrial adults. Amphibians also have moist, permeable skin, which allows them to breathe through their skin. They typically lay their eggs in water and undergo metamorphosis during their development.',
+   'input': {'question': "What's the main characteristic of amphibians?"},
+   'feedback': [EvaluationResult(key='correctness', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('b46ee973-6887-4450-94a9-af85613ea29d'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='Contextual Accuracy', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('910e6d60-29ee-4f53-aaa5-ebd5cb57ad71'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='COT Contextual Accuracy', score=1, value='CORRECT', comment="The student's answer correctly identifies the main characteristic of amphibians as their ability to live both in water and on land, which aligns with the context provided. The additional information provided by the student about the life cycle, skin, and reproduction of amphibians is also accurate and does not conflict with the context. Therefore, the student's answer is factually correct.\nGRADE: CORRECT", correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('49498807-e027-4130-a109-47851095e578'))}, source_run_id=None, target_run_id=None)],
+   'reference': {'answer': 'They live both in water and on land'}},
+  '9c7870a5-cbc5-4e44-8cd0-03653de9dab2': {'output': 'Reptiles are known for several characteristics:\n\n1. Cold-blooded: Reptiles are ectothermic animals, meaning they cannot regulate their body temperature internally. They rely on external sources of heat, such as sunlight, to warm their bodies.\n\n2. Scales: Reptiles have dry, scaly skin that helps prevent water loss and protects them from the environment. These scales can vary in texture and appearance, from smooth to rough and from brightly colored to camouflaged.\n\n3. Laying eggs: Most reptiles lay eggs, although some species give birth to live young. The eggs are typically leathery-shelled and are deposited in nests or buried in the ground.\n\n4. Terrestrial and aquatic habitats: Reptiles occupy a wide range of habitats, including deserts, forests, grasslands, and water bodies such as rivers, lakes, and oceans. Some reptiles are adapted to live in both aquatic and terrestrial environments.\n\n5. Breathe through lungs: Reptiles have lungs for breathing, unlike amphibians that also rely on their skin for respiration. They have specialized respiratory systems that allow them to efficiently extract oxygen from the air.\n\n6. Predators: Reptiles are often carnivorous, feeding on a variety of prey including insects, small mammals, birds, fish, and other reptiles. Some larger reptiles, like crocodilians, can even prey on large mammals.\n\n7. Diversity: Reptiles are a diverse group, including various orders such as snakes, lizards, turtles, crocodilians, and tuataras. They come in a wide range of sizes, shapes, and colors, exhibiting different adaptations and behaviors.\n\n8. Longevity: Many reptiles have long lifespans compared to other animals. Some tortoise species, for example, can live for more than 100 years.\n\n9. Ectothermic metabolism: Reptiles have a slower metabolic rate compared to warm-blooded animals. This allows them to survive on lower energy requirements and go for extended periods without food.\n\n10. Ancient lineage: Reptiles are descendants of some of the earliest land-dwelling vertebrates. They have been on Earth for millions of years and have evolved numerous adaptations to thrive in diverse environments.',
+   'input': {'question': 'What are reptiles known for?'},
+   'feedback': [EvaluationResult(key='Contextual Accuracy', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('15750b38-b46d-4e14-a983-aa1102bf6ed6'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='correctness', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('0e4886d3-9b8c-4b35-9eb0-f7022660c25c'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='COT Contextual Accuracy', score=1, value='CORRECT', comment="The student's answer includes the fact that reptiles are known for having scales, which is the context provided. The student also provides additional accurate information about reptiles, such as being cold-blooded, laying eggs, living in various habitats, breathing through lungs, being predators, their diversity, longevity, ectothermic metabolism, and ancient lineage. None of this additional information contradicts the context provided. Therefore, the student's answer is factually accurate.\nGRADE: CORRECT", correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('5f948ca6-76c8-432d-b3f4-f7d532f8bee9'))}, source_run_id=None, target_run_id=None)],
+   'reference': {'answer': 'Having scales'}},
+  '44af2bb9-c4d2-46fd-99a4-4e06f4e0a563': {'output': 'Mammals and birds are both vertebrate animals, meaning they have a backbone or spinal cord. Additionally, they are warm-blooded animals, maintaining a constant internal body temperature. Both mammals and birds have lungs for respiration and possess a four-chambered heart. They also have a relatively high metabolic rate and possess specialized adaptations for reproduction, such as giving birth to live young (in most mammals) or laying eggs (in birds). Furthermore, both mammals and birds exhibit diverse ecological adaptations and have evolved various locomotion methods, including walking, running, swimming, and flying.',
+   'input': {'question': 'What do mammals and birds have in common?'},
+   'feedback': [EvaluationResult(key='Contextual Accuracy', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('0a86d842-2c4c-4fd5-ab08-d121bbadfabf'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='correctness', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('2c232276-4a6b-44ed-a3a4-851ad200717d'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='COT Contextual Accuracy', score=1, value='CORRECT', comment="The student's answer is factually correct. The student correctly identifies that both mammals and birds are warm-blooded, which is the information provided in the context. The student also provides additional accurate information about the similarities between mammals and birds, such as being vertebrates, having lungs for respiration, possessing a four-chambered heart, and having diverse ecological adaptations. Although the context does not provide this additional information, the student's answer does not conflict with the context. Therefore, the student's answer is correct.\nGRADE: CORRECT", correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('c9b05c23-44ea-4cc2-a2f8-a5e97e514770'))}, source_run_id=None, target_run_id=None)],
+   'reference': {'answer': 'They are both warm-blooded'}},
+  '4ebcf822-8010-4f5f-9e60-e62ee8319f44': {'output': 'The blue whale (Balaenoptera musculus) holds the title for being the largest mammal on Earth. It can reach lengths of up to 98 feet (30 meters) and weigh up to 200 tons (181 metric tons).',
+   'input': {'question': 'What is the largest mammal?'},
+   'feedback': [EvaluationResult(key='correctness', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('75f75635-ff0f-46fe-95c1-c389ee4a7b5e'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='Contextual Accuracy', score=1, value='CORRECT', comment='CORRECT', correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('1d2b27fa-89e8-4716-8b35-5d065b145595'))}, source_run_id=None, target_run_id=None),
+    EvaluationResult(key='COT Contextual Accuracy', score=1, value='CORRECT', comment="The student's answer correctly identifies the blue whale as the largest mammal, which matches the context provided. The additional information about the size and weight of the blue whale does not conflict with the context, but rather provides more detail. \nGRADE: CORRECT", correction=None, evaluator_info={'__run': RunInfo(run_id=UUID('a0370f62-6018-49ce-b6a5-fb7ca3c179cf'))}, source_run_id=None, target_run_id=None)],
+   'reference': {'answer': 'The blue whale'}}}}
+"""
+```
