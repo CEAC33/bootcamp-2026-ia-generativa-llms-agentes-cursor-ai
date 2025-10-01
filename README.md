@@ -2994,10 +2994,10 @@ Memory
 
 Intro
 - Ability to store information about past interactions.
-- Most of memory-related functionality in LangChain is marked as beta. This is for two reasons:
+- **Most of memory-related functionality in LangChain is marked as beta**. This is for two reasons:
   1. Most functionality are not production ready.
   2. Most functionality work with Legacy chains, not the newer LCEL syntax.
-- The main exception to this is the ChatMessageHistory functionality. This functionality is largely production ready and does integrate with LCEL.
+- **The main exception to this is the ChatMessageHistory functionality**. This functionality is largely production ready and does integrate with LCEL.
 
 LangChain documentation on Memory
 - See the LangChain documentation page on Memory here. - https://python.langchain.com/v0.1/docs/modules/memory/
@@ -3035,6 +3035,7 @@ prompt = ChatPromptTemplate(
         SystemMessagePromptTemplate.from_template(
             "You are a nice chatbot having a conversation with a human."
         ),
+        # The `variable_name` here is what must align with memory
         MessagesPlaceholder(variable_name="chat_history"),
         HumanMessagePromptTemplate.from_template("{question}")
     ]
@@ -3503,3 +3504,57 @@ summary_memory.load_memory_variables({})
 {'history': "System: The human mentions Kurt Cobain's journey with different drummers before Dave Grohl joined Nirvana, including Aaron Burckhard, Chad Channing, and Dan Peters. Buzz Osbourne introduced Grohl to Cobain and Novoselic after a tour with Sonic Youth, ending the cycle of rotating drummers and solidifying the band's lineup.\nAI: Yes, that's correct! Dale Crover from the Melvins did indeed perform with Kurt Cobain and Krist Novoselic on that tour with Sonic Youth in August 1990. It's fascinating how the connections between different bands and musicians ultimately led to Dave Grohl joining Nirvana and solidifying the lineup. The music scene in Washington at that time was really interconnected and influential in shaping the sound of bands like Nirvana."}
 """
 ```
+
+### Chat Message History
+
+Chat Message History
+- Save list of chat messages and then fetch them all.
+
+Intro
+- Ability to store information about past interactions.
+- Most of memory-related functionality in LangChain is marked as beta. This is for two reasons:
+  1. Most functionality are not production ready.
+  2. Most functionality work with Legacy chains, not the newer LCEL syntax.
+- The main exception to this is the ChatMessageHistory functionality. This functionality is largely production ready and does integrate with LCEL.
+
+LangChain documentation on Memory
+- See the LangChain documentation page on Memory here. - https://python.langchain.com/v0.1/docs/modules/memory/
+- See the LangChain documentation page on how to use ChatMessageHistory with LCEL here. - https://python.langchain.com/v0.1/docs/expression_language/how_to/message_history/
+- See the LangChain documentation page on the various ChatMessageHistory integrations here. - https://python.langchain.com/v0.1/docs/integrations/memory/
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(model="gpt-3.5-turbo-0125")
+
+# ChatMessageHistory
+# ChatMessageHistory provides convenience methods for saving HumanMessages, AIMessages, and then fetching them all.
+from langchain.memory import ChatMessageHistory
+
+history = ChatMessageHistory()
+
+history.add_user_message("hi!")
+
+history.add_ai_message("whats up?")
+
+my_chat_memory = history.messages
+# [HumanMessage(content='hi!'), AIMessage(content='whats up?')]
+
+print("\n----------\n")
+
+print("Chat Memory:")
+
+print("\n----------\n")
+print(my_chat_memory)
+
+print("\n----------\n")
+```
+
+## LangChain Basics: El ecosistema LangChain
+
+
