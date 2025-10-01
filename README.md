@@ -3782,3 +3782,88 @@ https://smith.langchain.com/datasets/fd0aa228-8310-4082-b949-776429b7eac3
    'reference': {'answer': 'The blue whale'}}}}
 """
 ```
+
+### LangSmith proporciona region-specific API endpoints
+
+LangSmith proporciona endpoints de API específicos por región para cumplir con los requisitos de residencia de datos.
+
+Para los usuarios en Europa, el endpoint adecuado es:
+https://eu.api.smith.langchain.com.
+
+Intentar usar el endpoint predeterminado de EE. UU. (https://api.smith.langchain.com) desde Europa puede provocar problemas, como que los proyectos no se registren correctamente.
+
+Para garantizar una integración fluida, por favor configura la variable de entorno LANGSMITH_ENDPOINT con el endpoint europeo:
+
+export LANGSMITH_ENDPOINT="https://eu.api.smith.langchain.com"
+
+Además, asegúrate de que tu LANGSMITH_API_KEY corresponda a la región en la que estás operando. Usar una clave API de la región de EE. UU. con el endpoint de la UE, o viceversa, puede causar errores de autenticación.
+
+Configurando correctamente el endpoint y utilizando una clave API correspondiente, tus proyectos deberían registrarse adecuadamente.
+
+### LangChain y LangServe
+
+```python
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+# LangServe
+# Here's a server that deploys an OpenAI chat model and a chain that uses the OpenAI chat model to tell a joke about a topic.
+
+#!pip install langserve
+#!pip install sse_starlette
+
+#!/usr/bin/env python
+from fastapi import FastAPI
+from threading import Thread
+from langchain.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langserve import add_routes
+
+
+app = FastAPI(
+  title="LangChain Server",
+  version="1.0",
+  description="A simple api server using Langchain's Runnable interfaces",
+)
+
+add_routes(
+    app,
+    ChatOpenAI(),
+    path="/openai",
+)
+
+model = ChatOpenAI()
+
+prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
+
+add_routes(
+    app,
+    prompt | model,
+    path="/chain",
+)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    @app.get("/")
+    async def read_root():
+        return {"Hello": "World"}
+
+    # Function to run the Uvicorn server in a thread
+    def run_server():
+        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="info")
+
+    # Start the server in a separate thread
+    thread = Thread(target=run_server)
+    thread.start()
+```
+
+**Links**
+* Playground to check the app: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+* API routes:
+    * [http://127.0.0.1:8000/openai](http://127.0.0.1:8000/openai)
+    * [http://127.0.0.1:8000/chain](http://127.0.0.1:8000/chain)
+* FastAPI API documentation: [http://127.0.0.1:8000/docs#/](http://127.0.0.1:8000/docs#/)
+
