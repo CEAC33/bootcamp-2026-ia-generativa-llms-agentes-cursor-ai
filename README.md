@@ -3936,3 +3936,538 @@ New pricing
 - LGraph Cloud in free beta by now
 
 ## Aplicaciones LangChain de Nivel 1: The Top 10 LangChain Apps
+
+https://github.com/AI-LLM-Bootcamp/02-advanced-chatbot
+
+- Chatbot
+- Data Extraction
+- Sentiment Analysis
+- QA over SQL
+- QA over PDF
+- Retriever
+- RAG
+- Conversational RAG
+- Tool-using Agent
+- Basic Deployment
+
+### Chatbot App con Memoria Temporal
+
+How to build a simple Chatbot with stored memory using LangChain
+- Simple Chatbot LLM App.
+  - Will be able to have a conversation.
+  - Will remember previous interactions: will have memory.
+  - Will be able to store memory in a json file.
+
+A chatbot app is a software application designed to simulate conversation with human users. It uses artificial intelligence (AI) to understand what someone is saying and to respond with appropriate answers. These apps can be used for various purposes like customer support, providing information, or entertainment. Essentially, it's like texting with a program that can answer questions and help with tasks.
+
+Concepts included
+- Chat Model vs. LLM Model:
+  - Chat Model is based around messages.
+  - LLM Model is based around raw text.
+- Chat History: allows Chat Model to remember previous interactions.
+
+```python
+"""
+ Trick to avoid the nasty deprecation warnings from LangChain
+ In this exercise we will use the LangChain legacy chain LLMChain. It works well, but LangChain displays a nasty deprecation warning. To avoid it, we will enter the following code:
+import warnings
+"""
+
+from langchain._api import LangChainDeprecationWarning
+
+warnings.simplefilter("ignore", category=LangChainDeprecationWarning)
+
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatbot = ChatOpenAI(model="gpt-3.5-turbo")
+
+from langchain_core.messages import HumanMessage
+
+messagesToTheChatbot = [
+    HumanMessage(content="My favorite color is blue."),
+]
+
+response = chatbot.invoke(messagesToTheChatbot)
+
+print("\n----------\n")
+
+print("My favorite color is blue.")
+
+print("\n----------\n")
+print(response.content)
+
+print("\n----------\n")
+
+response = chatbot.invoke([
+    HumanMessage(content="What is my favorite color?")
+])
+
+print("\n----------\n")
+
+print("What is my favorite color?")
+
+print("\n----------\n")
+print(response.content)
+
+print("\n----------\n")
+
+from langchain import LLMChain
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import HumanMessagePromptTemplate
+from langchain_core.prompts import MessagesPlaceholder
+from langchain.memory import ConversationBufferMemory
+from langchain.memory import FileChatMessageHistory
+
+memory = ConversationBufferMemory(
+    chat_memory=FileChatMessageHistory("messages.json"),
+    memory_key="messages",
+    return_messages=True
+)
+
+prompt = ChatPromptTemplate(
+    input_variables=["content", "messages"],
+    messages=[
+        MessagesPlaceholder(variable_name="messages"),
+        HumanMessagePromptTemplate.from_template("{content}")
+    ]
+)
+
+chain = LLMChain(
+    llm=chatbot,
+    prompt=prompt,
+    memory=memory
+)
+
+response = chain.invoke("hello!")
+"""
+{'content': 'hello!',
+ 'messages': [],
+ 'text': 'Hello! How can I assist you today?'}
+"""
+
+print("\n----------\n")
+
+print("hello!")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+
+response = chain.invoke("my name is Julio")
+"""
+{'content': 'my name is Julio',
+ 'messages': [HumanMessage(content='hello!'),
+  AIMessage(content='Hello! How can I assist you today?')],
+ 'text': 'Nice to meet you, Julio! How can I help you today?'}
+"""
+
+print("\n----------\n")
+
+print("my name is Julio")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+
+response = chain.invoke("what is my name?")
+"""
+{'content': 'what is my name?',
+ 'messages': [HumanMessage(content='hello!'),
+  AIMessage(content='Hello! How can I assist you today?'),
+  HumanMessage(content='my name is Julio'),
+  AIMessage(content='Nice to meet you, Julio! How can I help you today?')],
+ 'text': 'Your name is Julio.'}
+"""
+
+"""
+Check the file messages.json in the root directory.
+This is just a simple example, in the real world you probably will not save your memory in a json file.
+And remember: the context window is limited and it affects to the cost of using chatGPT API.
+"""
+print("\n----------\n")
+
+print("what is my name?")
+
+print("\n----------\n")
+print(response)
+
+print("\n----------\n")
+```
+
+### Chatbot App con Memoria Permanente
+
+How to build an advanced Chatbot with session memory using LangChain
+- Advanced Chatbot LLM App.
+  - Will be able to have a conversation.
+  - Will remember previous interactions: will have memory.
+  - Will be able to have different memories for different user sessions.
+  - Will be able to remember a limited number of messages: limited memory.
+
+Concepts included
+- Chat Model vs. LLM Model:
+  - Chat Model is based around messages.
+  - LLM Model is based around raw text.
+- Chat History: allows Chat Model to remember previous interactions.
+
+```python
+import warnings
+
+from langchain._api import LangChainDeprecationWarning
+
+warnings.simplefilter("ignore", category=LangChainDeprecationWarning)
+
+import os
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv())
+openai_api_key = os.environ["OPENAI_API_KEY"]
+
+from langchain_openai import ChatOpenAI
+
+chatbot = ChatOpenAI(model="gpt-3.5-turbo")
+
+from langchain_core.messages import HumanMessage
+
+messagesToTheChatbot = [
+    HumanMessage(content="My favorite color is blue."),
+]
+
+response = chatbot.invoke(messagesToTheChatbot)
+
+print("\n----------\n")
+
+print("My favorite color is blue.")
+
+print("\n----------\n")
+print(response.content)
+
+print("\n----------\n")
+
+response = chatbot.invoke([
+    HumanMessage(content="What is my favorite color?")
+])
+
+"""
+AIMessage(content="I'm sorry, I'm not able to know your favorite color as an AI assistant. Can you please tell me what your favorite color is?", response_metadata={'token_usage': {'completion_tokens': 29, 'prompt_tokens': 13, 'total_tokens': 42}, 'model_name': 'gpt-3.5-turbo', 'system_fingerprint': None, 'finish_reason': 'stop', 'logprobs': None}, id='run-75666902-eef4-4507-ba38-75b0b7e8a886-0', usage_metadata={'input_tokens': 13, 'output_tokens': 29, 'total_tokens': 42})
+As you can see, our Chatbot cannot remember our previous interaction.
+"""
+
+print("\n----------\n")
+
+print("What is my favorite color?")
+
+print("\n----------\n")
+print(response.content)
+
+print("\n----------\n")
+
+"""
+Let's add memory to our Chatbot
+We will use the ChatMessageHistory package.
+We will save the Chatbot memory in a python dictionary called chatbotMemory.
+We will define the get_session_history function to create a session_id for each conversation.
+We will use the built-in runnable RunnableWithMesageHistory.
+If you are using the pre-loaded poetry shell, you do not need to install the following package because it is already pre-loaded for you:
+"""
+
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+
+chatbotMemory = {}
+
+# input: session_id, output: chatbotMemory[session_id]
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in chatbotMemory:
+        chatbotMemory[session_id] = ChatMessageHistory()
+    return chatbotMemory[session_id]
+
+
+chatbot_with_message_history = RunnableWithMessageHistory(
+    chatbot, 
+    get_session_history
+)
+
+"""
+What is BaseChatMessageHistory and what it does?
+BaseChatMessageHistory is what is called an abstract base class in Python. See more info about this here.
+https://api.python.langchain.com/en/latest/chat_history/langchain_core.chat_history.BaseChatMessageHistory.html
+This means it serves as a template or a foundational blueprint for other classes. It outlines a set of methods and structures that any class inheriting from it must implement or adhere to, but it cannot be used to create objects directly.
+
+Here's a simpler breakdown of what it means for BaseChatMessageHistory to be an abstract base class:
+1. Blueprint for Other Classes: It provides a predefined structure that other classes can follow. Think of it like an outline or a checklist for building something; it specifies what needs to be included, but it isn’t the final product.
+
+2. Cannot Create Instances: You cannot create an instance of an abstract base class. Trying to create an object directly from BaseChatMessageHistory would result in an error because it's meant to be a guide, not something to use directly.
+
+3. Requires Implementation: Any class that inherits from this abstract base class needs to implement specific methods outlined in BaseChatMessageHistory, such as methods for adding messages, retrieving messages, and clearing messages. The class sets the rules, and the subclasses need to follow these rules by providing the actual operational details.
+
+4. Purpose in Design: Using an abstract base class helps ensure consistency and correctness in the implementation of classes that extend it. It's a way to enforce certain functionalities in any subclass, making sure that they all behave as expected without rewriting the same code multiple times.
+
+Overall, the concept of an abstract base class is about setting standards and rules, while leaving the specific details of execution to be defined by subclasses that inherit from it.
+
+Let's explain the previous code in simple terms
+The previous code manages the chatbot's memory of conversations based on session identifiers. Here’s a breakdown of what the different components do:
+
+1. chatbotMemory:
+- chatbotMemory = {}: This initializes an empty dictionary where session IDs and their respective chat histories will be stored.
+
+2. get_session_history Function:
+- This function, get_session_history, takes a session_id as an argument and returns the chat history associated with that session.
+- If a chat history for the given session_id does not exist in chatbotMemory, a new instance of ChatMessageHistory is created and assigned to that session_id in the dictionary.
+- The function ensures that each session has its own unique chat history, stored and retrieved using the session ID.
+
+3. chatbot_with_message_history:
+- chatbot_with_message_history = RunnableWithMessageHistory(chatbot, get_session_history): This line creates an instance of RunnableWithMessageHistory using two arguments: chatbot and get_session_history.
+- The chatbot is passed along with the get_session_history function. This setup integrates the chatbot with the functionality to handle session-specific chat histories, allowing the chatbot to maintain continuity and context in conversations across different sessions.
+- Learn more about RunnableWithMessageHistory here. - https://python.langchain.com/v0.1/docs/expression_language/how_to/message_history/
+
+Overall, the code organizes and manages a chatbot's memory, enabling it to handle different sessions with users effectively by remembering previous messages within each session.
+
+RunnableWithMessageHistory
+When invoking a new RunnableWithMessageHistory, we specify the corresponding chat history using a configurable parameter. Let's say we want to create a chat memory for one user session, let's call it session1:
+"""
+
+session1 = {"configurable": {"session_id": "001"}}
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="My favorite color is red.")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("My favorite color is red.")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+#"That's a bold and vibrant choice! Red is often associated with energy, passion, and strength. Do you have a specific reason why red is your favorite color?"
+
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="What's my favorite color?")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("What's my favorite color? (in session1)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+# 'Your favorite color is red!'
+
+print("\n----------\n")
+
+"""
+Let's now change the session_id and see what happens
+Now let's create a chat memory for another user session, let's call it session2:
+"""
+
+session2 = {"configurable": {"session_id": "002"}}
+
+"""
+If the chatbot is using this new memory for session2, it will not be able to remember anything from the previous conversation in the session1:
+"""
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="What's my favorite color?")],
+    config=session2,
+)
+
+print("\n----------\n")
+
+print("What's my favorite color? (in session2)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+# "I'm sorry, I don't have that information. Can you please tell me what your favorite color is?"
+
+print("\n----------\n")
+
+"""
+Let's go back to session1 and see if the memory is still there
+"""
+
+session1 = {"configurable": {"session_id": "001"}}
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="What's my favorite color?")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("What's my favorite color? (in session1 again)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+# 'Your favorite color is red!'
+
+print("\n----------\n")
+
+session2 = {"configurable": {"session_id": "002"}}
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="Mi name is Julio.")],
+    config=session2,
+)
+
+print("\n----------\n")
+
+print("Mi name is Julio. (in session2)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="What is my name?")],
+    config=session2,
+)
+
+print("\n----------\n")
+
+print("What is my name? (in session2)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="What is my favorite color?")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("What is my favorite color? (in session2)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+"""
+Our chatBot now remembers each of our conversations.
+The importance to manage the Conversation History
+The memory of a chatbot is included in the context window of the LLM so, if left unmanaged, can potentially overflow it.
+We are now going to learn how to limit the size of the memory of a chatbot.
+First, let's take a look at what is in the memory of our chatbot:
+"""
+
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables import RunnablePassthrough
+
+"""
+Now, let's define a function to limit the number of messages stored in memory and add it to our chain with .assign.
+"""
+
+def limited_memory_of_messages(messages, number_of_messages_to_keep=2):
+    return messages[-number_of_messages_to_keep:]
+
+prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            "You are a helpful assistant. Answer all questions to the best of your ability.",
+        ),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
+
+limitedMemoryChain = (
+    RunnablePassthrough.assign(messages=lambda x: limited_memory_of_messages(x["messages"]))
+    | prompt 
+    | chatbot
+)
+
+"""
+- The limited_memory_of_messages function allows you to trim the list of stored messages, keeping only a specified number of the latest ones. For example, if you have a long list of messages and you only want to keep the last two, this function will do that for you.
+
+- The lambda function works in conjunction with the limited_memory_of_messages function. Here’s a simple breakdown:
+
+  1. Lambda Function: The lambda keyword is used to create a small anonymous function in Python. The lambda function defined here takes one argument, x.
+
+  2. Function Argument: The argument x is expected to be a dictionary that contains a key named "messages". The value associated with this key is a list of messages.
+
+  3. Function Body: The body of the lambda function calls the limited_memory_of_messages function. It passes the list of messages found in x["messages"] to this function.
+
+  4. Default Behavior of limited_memory_of_messages: Since the lambda function does not specify the number_of_messages_to_keep parameter when it calls limited_memory_of_messages, the latter will default to keeping the last 2 messages from the list (as defined by the earlier function).
+
+In essence, the lambda function is a shorthand way to apply the limited_memory_of_messages function to the message list contained within a dictionary. It automatically trims the list to the last two messages.
+"""
+
+chatbot_with_limited_message_history = RunnableWithMessageHistory(
+    limitedMemoryChain,
+    get_session_history,
+    input_messages_key="messages",
+)
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="My favorite vehicles are Vespa scooters.")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("My favorite vehicles are Vespa scooters. (in session1)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="My favorite city is San Francisco.")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("My favorite city is San Francisco. (in session1)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_limited_message_history.invoke(
+    {
+        "messages": [HumanMessage(content="what is my favorite color?")],
+    },
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("what is my favorite color? (chatbot with memory limited to the last 3 messages)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+
+responseFromChatbot = chatbot_with_message_history.invoke(
+    [HumanMessage(content="what is my favorite color?")],
+    config=session1,
+)
+
+print("\n----------\n")
+
+print("what is my favorite color? (chatbot with unlimited memory)")
+
+print("\n----------\n")
+print(responseFromChatbot.content)
+
+print("\n----------\n")
+```
