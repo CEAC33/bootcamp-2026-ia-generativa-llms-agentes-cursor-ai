@@ -4471,3 +4471,23 @@ print(responseFromChatbot.content)
 
 print("\n----------\n")
 ```
+
+## LLMOps
+
+- Intro a LLMOps
+- Evaluación: Misaligned Behaviour
+- Evaluación: Lack of reproducibility}
+- Lifecycle Management
+- Soluciones de LLMOps
+
+## Intro a LLMOps
+
+**LLMOps**
+- Mantenimiento de una LLM App
+- Observability
+- Monitoring
+- Evaluation/Testing
+- Guardrails
+
+
+
