@@ -4476,11 +4476,11 @@ print("\n----------\n")
 
 - Intro a LLMOps
 - Evaluación: Misaligned Behaviour
-- Evaluación: Lack of reproducibility}
+- Evaluación: Lack of reproducibility
 - Lifecycle Management
 - Soluciones de LLMOps
 
-## Intro a LLMOps
+### Intro a LLMOps
 
 **LLMOps**
 - Mantenimiento de una LLM App
@@ -4489,5 +4489,106 @@ print("\n----------\n")
 - Evaluation/Testing
 - Guardrails
 
+### Evaluación: Misaligned Behavior
 
+- Omitir algunos datos concretos
+- Anonimizar algunos datos
+- Encriptar algunos datos
+- Usando adecuadamente la randomización de datos
+- ¿El grupo de datos es representativo?
+- ¿Están desalineados los datos?
+- ¿Son coherentes?
+
+### Evaluación: Lack of Reproducibility
+
+- Debido al problema de lack of reproducibility (falta de reproducibilidad),
+evaluar LLM apps es complicado.
+- ¿En qué consiste este problema? En que, a diferencia de las apps
+tradicionales, una LLM App no siempre proporciona el mismo output para un
+mismo input.
+- Por este motivo los tests tradicionales no sirven para evaluar la calidad de
+una LLM App.
+
+### Lifecycle Management
+
+LLM Ops
+- Model lifecycle management.
+- Responsible AI.
+
+Model lifecycle management
+- Model lifecycle:
+  - deployment,
+  - monitoring,
+  - evaluation
+  - and tuning
+- Model lifecycle management:
+  - efficiency,
+  - scalability
+  - and risk mitigation
+
+Model lifecycle
+- Model lifecycle:
+  - deployment,
+  - monitoring,
+  - evaluation
+  - and tuning
+
+1. Deployment
+- Despliegue: La fase de despliegue implica la implementación del modelo de
+LLM en un entorno de producción. Esto incluye la integración del modelo con
+las interfaces de usuario, la configuración de la infraestructura necesaria y la
+garantía de que el modelo esté listo para interactuar con los usuarios finales.
+En esta etapa, es crucial considerar aspectos como la carga de trabajo
+prevista y la compatibilidad con los sistemas existentes.
+
+2. Monitoring
+- Monitoreo: Una vez desplegada, la aplicación necesita un monitoreo
+constante. Esto implica rastrear el rendimiento del modelo, su precisión,
+tiempos de respuesta y consumo de recursos. El monitoreo también incluye
+la supervisión de la interacción del usuario con el modelo para identificar
+posibles problemas o áreas de mejora.
+
+3. Evaluation
+- Evaluación: La evaluación regular es vital para asegurarse de que el modelo
+sigue siendo relevante y efectivo. Esto puede implicar pruebas de
+rendimiento, análisis de feedback de los usuarios y comparación de los
+resultados del modelo con los estándares de la industria o los objetivos
+comerciales.
+
+4. Tuning
+- Ajuste: Basándose en los resultados del monitoreo y la evaluación, el modelo
+puede requerir ajustes. Esto puede incluir la recalibración del modelo, la
+actualización de sus datos de entrenamiento o la modificación de sus
+parámetros para mejorar la precisión, reducir sesgos o mejorar la experiencia
+del usuario.
+
+Model lifecycle management
+- Eficiencia: La gestión eficiente del ciclo de vida de la aplicación se centra en maximizar el
+rendimiento del modelo mientras se minimiza el uso de recursos. Esto incluye la
+optimización de la infraestructura, el uso eficiente de la computación y el almacenamiento,
+y la automatización de procesos como el monitoreo y el ajuste.
+- Escalabilidad: Las aplicaciones basadas en LLM deben ser capaces de escalar para
+manejar un número creciente de usuarios y solicitudes. Esto requiere una infraestructura
+flexible y adaptable, así como modelos que puedan mantener su rendimiento a diferentes
+escalas.
+- Mitigación de Riesgos: La gestión del riesgo implica identificar y abordar posibles
+problemas de seguridad, privacidad y cumplimiento. Esto incluye la protección de los datos
+del usuario, la garantía de que el modelo no viole las normativas legales y la
+implementación de salvaguardas contra el uso indebido del modelo.
+
+### Principios de la Responsible AI
+
+- Equidad y eliminación de sesgos
+- Fiabilidad y seguridad
+- Privacidad y protección de datos
+- Transparencia y explicabilidad
+- Responsabilidad y gobernanza
+- Inclusividad y accesibilidad
+
+### Soluciones LLMOps
+
+- Mercado en plena ebullición
+- Whylabs
+- LangKit
+- LLM Security Management
 
