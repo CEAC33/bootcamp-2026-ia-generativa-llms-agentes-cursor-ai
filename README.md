@@ -4633,3 +4633,54 @@ los LLMs.
 - Guardrails y Registro Personalizable: Implementa guardrails en línea con métricas,
 umbrales y acciones personalizables, y registra cada par de prompt/respuesta.****
 
+### LLMOps con LangSmith: El ciclo LLMOps y cómo LS resuelve sus problemas
+
+#### Full Professional LLM App Development Cycle
+1. Prototyping: develop the first prototype of your application.
+2. Beta testing: test your prototype with real users and get their feedback to
+make improvements.
+3. Production: monitor the performance of your application and keep improving it.
+
+#### Prototyping phase: challenges
+- When things go wrong, how to identify what is failing.
+- How to iterate and experiment in a fast and easy way.
+- How to compare the performance of alternative prompts, retrieval strategies
+and model choices.
+- How to test the performance of the prototype.
+
+#### Prototyping phase: challenges solved by LangSmith
+- When things go wrong, how to identify what is failing.
+  - Have LangSmith tracing enabled since the day 1 of the development of a new LLM
+Application.
+- How to iterate and experiment in a fast and easy way.
+  - Use LangSmith Playground to iterate and experiment.
+- How to compare the performance of alternative prompts, retrieval strategies and model choices.
+  - Use LangSmith Comparison View to compare the performance of alternative approaches.
+- How to test the performance of the prototype.
+  - Use LangSmith to create a Test Dataset.
+ 
+#### Beta testing phase: challenges
+- How to process and analyze the feedback of the initial users.
+
+#### Beta testing phase: challenges solved by LangSmith
+- How to process and analyze the feedback of the initial users.
+  - Use LangSmith to filter traces with negative human feedback to
+understand the problems behind them.
+  - Use LangSmith to inspect interesting traces and enter annotations about
+them.
+  - Use LangSmith to expand the Test Dataset by adding runs as examples.
+ 
+#### Production phase: challenges
+- Keep processing and analyzing user feedback.
+- How to measure the performance of the App.
+- How to keep improving the App.
+
+#### Production phase: challenges solved by LangSmith
+- Keep processing and analyzing user feedback.
+  - Keep using LangSmith as in the Beta Testing phase.
+- How to measure the performance of the App.
+  - Use LangSmith to monitor key metrics.
+- How to keep improving the App.
+  - Use LangSmith to mark different versions for A/B Testing of prompts, models or retrieval strategies.
+ 
+
