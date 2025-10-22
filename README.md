@@ -4635,6 +4635,104 @@ umbrales y acciones personalizables, y registra cada par de prompt/respuesta.***
 
 ### LLMOps con LangSmith: El ciclo LLMOps y cómo LS resuelve sus problemas
 
+#### Highlights
+* LangSmith goes from beta to production.
+    * **Improving from user feedback** since July 2023.
+    * Investing in infrastructure.
+* The capital raised means trust, future and stability.
+
+## LangChain describes the full Professional LLM App Production Cycle, and how to use LangSmith through it all
+
+#### 1. Prototyping: develop the first prototype of the application.
+* Have LangSmith tracing enabled since the day 1 of the development of a new LLM Application. When things go wrong it’s extremely helpful to debug by looking through the application traces.
+* Use LangSmith Playground to iterate and experiment.
+* Use LangSmith Comparison View to compare the performance of alternative prompts, retrieval strategies and model choices.
+* Use LangSmith to create a Test Dataset. Test datasets are collections of inputs and reference outputs to evaluate the performance of the LLM Application.
+
+#### 2. Beta testing: test the prototype with feedback from real users.
+* Use LangSmith to filter traces with negative human feedback to understand the problems behind them.
+* Use LangSmith to inspect interesting traces and enter annotations about them.
+* Use LangSmith to expand the Test Dataset by adding runs as examples. 
+
+#### 3. Production: monitor the performance of your application and keep improving it.
+* Use LangSmith to monitor key metrics.
+* Use LangSmith to mark different versions for A/B Testing of prompts, models or retrieval strategies.
+
+## 1. Prototyping
+* involves quick experimentation between prompts, model types, retrieval strategy and other parameters.
+* The ability to rapidly understand how the model is performing — and debug where it is failing — is incredibly important for this phase.
+
+## 1.1. Debugging
+
+#### Have LangSmith tracing enabled when developing a new LLM Application
+* When developing new LLM applications, we suggest having LangSmith tracing enabled by default.
+* It isn’t necessary to look at every single trace. However, **when things go wrong** (an unexpected end result, infinite agent loop, slower than expected execution, higher than expected token usage), **it’s extremely helpful to debug by looking through the application traces**.
+* LangSmith gives clear visibility and debugging information at each step of an LLM sequence, making it much easier to identify and root-cause issues.
+* LangSmith provides native rendering of chat messages, functions, and retrieve documents.
+
+#### Use LangSmith Playground to iterate and experiment
+* LangSmith provides a playground environment for rapid iteration and experimentation.
+* This allows you to **quickly test out different prompts and models**. You can open the playground from any prompt or model run in your trace.
+* Every playground run is logged in the system and can be used to create test cases or compare with other runs.
+
+#### Use LangSmith Comparison View to compare the performance of alternative prompts, retrieval strategies and model choices 
+* When prototyping different versions of your applications and making changes, it’s important to see whether or not you’ve regressed with respect to your initial test cases.
+* Oftentimes, **changes in the prompt, retrieval strategy, or model choice can have huge implications in responses produced by your application**.
+* In order to get a sense for which variant is performing better, it’s useful to be able to view results for different configurations on the same datapoints side-by-side.
+* LangSmith has invested heavily in a user-friendly comparison view for test runs to track and diagnose regressions in test scores across multiple revisions of your application.
+
+#### Create a Test Dataset with LangSmith
+* While many developers still ship an initial version of their application based on “vibe checks”, we’ve seen an increasing number of engineering teams start to adopt a more test driven approach.
+* LangSmith allows developers to create **test datasets, which are collections of inputs and reference outputs**, and use these to run tests on their LLM applications.
+* These test cases can be uploaded in bulk, created on the fly, or exported from application traces.
+* LangSmith also makes it easy to **run custom evaluations (both LLM and heuristic based) to score test results**.
+
+## 2. Beta Testing
+* Beta testing allows developers to **collect more data on how their LLM applications are performing in real-world scenarios**.
+* In this phase, it’s important to **develop an understanding for the types of inputs the app is performing well or poorly on** and how exactly it’s breaking down in those cases.
+* **Both feedback collection and run annotation are critical for this workflow**. This will help in curation of test cases that can help track regressions/improvements and development of automatic evaluations.
+
+#### Use LangSmith to filter traces with negative human feedback to understand the problems behind them
+* When launching your application to an initial set of users, it’s important to **gather human feedback** on the responses it’s producing. This helps draw attention to the most interesting runs and highlight edge cases that are causing problematic responses.
+* **LangSmith allows you to attach feedback scores to logged traces** (oftentimes, this is hooked up to a feedback button in your app), **then filter on traces that have a specific feedback tag and score**.
+* A common workflow is to filter on traces that receive a poor user feedback score, then drill down into problematic points using the detailed trace view.
+
+#### Use LangSmith to inspect interesting traces and enter annotations about them
+* LangSmith supports sending runs to annotation queues, which **allow annotators to closely inspect interesting traces and annotate them** with respect to different criteria.
+* Annotators can be PMs, engineers, or even subject matter experts.
+* This allows users to catch regressions across important evaluation criteria.
+
+#### LangSmith allows you to expand the Test Dataset by adding runs as examples
+* As your application progresses through the beta testing phase, it's essential to continue collecting data to refine and improve its performance.
+* **LangSmith enables you to add runs as examples to datasets** (from both the project page and within an annotation queue), **expanding your test coverage on real-world scenarios**.
+* This is a key benefit in having your logging system and your evaluation/testing system in the same platform.
+
+## 3. Production
+* Closely inspecting key data points,
+* growing benchmarking datasets,
+* annotating traces,
+* and drilling down into important data in trace view
+* are workflows you’ll also want to do once your app hits production.
+* However, especially at the production stage, it’s crucial to **get a high-level overview of application performance with respect to**
+    * **latency,**
+    * **cost,**
+    * **and feedback scores**.
+* This ensures that it's delivering desirable results at scale.
+
+#### Use LangSmith to monitor key metrics and to mark different versions for A/B Testing prompts, models or retrieval strategies 
+* LangSmith provides monitoring charts that allow you to **track key metrics** over time.
+* You can expand to view metrics for a given period and drill down into a specific data point to get a trace table for that time period — this is especially handy for debugging production issues.
+* The platform also allows for **tag and metadata grouping, which allows users to mark different versions of their applications** with different identifiers and view how they are performing side-by-side within each chart.
+* This is **helpful for A/B testing changes in prompt, model, or retrieval strategy**.
+
+## The road ahead
+Our future directions include:
+* Support for regression testing.
+* Ability to run online evaluators on a sample of production data.
+* Better filtering and conversation support.
+* **Easy deployment of applications with hosted LangServe**.
+* **Enterprise features to support the administration and security needs** for our largest customers.
+
 #### Full Professional LLM App Development Cycle
 1. Prototyping: develop the first prototype of your application.
 2. Beta testing: test your prototype with real users and get their feedback to
